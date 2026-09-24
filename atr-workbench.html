@@ -999,17 +999,39 @@
     return lines.join("\n");
   }
 
+  // Inside the Claude artifact viewer the frame blocks ordinary downloads, so the
+  // downloads capability is the only way out; anywhere else (GitHub Pages, a local
+  // file, any web host) a plain anchor download works.
+  const sandboxed = !!(window.claude && typeof window.claude.use === "function");
   let downloads = null;
-  if (window.claude && typeof window.claude.use === "function") {
-    window.claude.use("downloads").then((d) => { downloads = d; if (!d) $("dl").hidden = true; }).catch(() => { $("dl").hidden = true; });
-  } else $("dl").hidden = true;
+  if (sandboxed) {
+    window.claude.use("downloads")
+      .then((d) => { downloads = d; if (!d) $("dl").hidden = true; })
+      .catch(() => { $("dl").hidden = true; });
+  }
+
+  async function saveFile(filename, data, mime) {
+    if (sandboxed) {
+      if (!downloads) throw Object.assign(new Error("unavailable"), { code: "unavailable" });
+      await downloads.save({ filename, data });
+      return;
+    }
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime || "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
 
   $("dl").addEventListener("click", async () => {
     if (!S.samples.length || !S.samples[0].A) return;
-    if (!downloads) { $("exportstatus").textContent = "이 화면에서는 저장을 쓸 수 없습니다. 복사를 사용하세요."; return; }
     try {
-      $("exportstatus").textContent = "저장 확인을 기다리는 중…";
-      await downloads.save({ filename: "ATR_KK_corrected.csv", data: buildCSV() });
+      if (sandboxed) $("exportstatus").textContent = "저장 확인을 기다리는 중…";
+      // UTF-8 BOM so Excel reads the Korean sample names correctly
+      await saveFile("ATR_KK_corrected.csv", "﻿" + buildCSV(), "text/csv;charset=utf-8");
       $("exportstatus").textContent = "CSV를 저장했습니다.";
     } catch (err) {
       const code = err && err.code;
@@ -1033,12 +1055,12 @@
   $("dlpng").addEventListener("click", async () => {
     const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
     if (!blob) return;
-    if (!downloads) { $("exportstatus").textContent = "이 화면에서는 그래프 저장을 쓸 수 없습니다."; return; }
     try {
-      await downloads.save({ filename: "ATR_spectra.png", data: blob });
+      await saveFile("ATR_spectra.png", blob, "image/png");
       $("exportstatus").textContent = "그래프를 저장했습니다.";
     } catch (err) {
-      $("exportstatus").textContent = (err && err.code) === "declined" ? "저장을 취소했습니다." : "그래프 저장 실패.";
+      const code = err && err.code;
+      $("exportstatus").textContent = code === "declined" ? "저장을 취소했습니다." : "그래프 저장 실패: " + (code || "unknown");
     }
   });
 
