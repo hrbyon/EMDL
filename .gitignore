@@ -1,0 +1,19 @@
+# 저작권 문헌 · 미발표 실험 데이터는 저장소에 올리지 않습니다
+*.pdf
+*.pptx
+*.docx
+*.xlsx
+*.dat
+*.csv
+ATR_KK_output/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

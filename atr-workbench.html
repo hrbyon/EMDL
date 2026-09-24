@@ -1,0 +1,1056 @@
+<title>ATR-FTIR 보정 워크벤치</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ground: #F3F5F3;
+    --surface: #FFFFFF;
+    --surface-2: #EDF1EF;
+    --ink: #111A1B;
+    --ink-2: #3C4C4D;
+    --muted: #5B6B6D;
+    --rule: #DAE2E0;
+    --rule-strong: #BDC9C6;
+    --raw: #4E6C82;
+    --corr: #C4561F;
+    --third: #6E8B3D;
+    --warn: #B0402F;
+    --warn-bg: #F7E8E4;
+    --ok: #2E7A57;
+    --focus: #1F6F8B;
+    --shadow: 0 1px 2px rgba(17, 26, 27, .06), 0 8px 24px -18px rgba(17, 26, 27, .35);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0E1415;
+      --surface: #151D1E;
+      --surface-2: #1B2526;
+      --ink: #E8EEEB;
+      --ink-2: #C3CFCD;
+      --muted: #93A5A4;
+      --rule: #263333;
+      --rule-strong: #354545;
+      --raw: #82A8C2;
+      --corr: #E98B51;
+      --third: #A6C06D;
+      --warn: #E58A76;
+      --warn-bg: #33201C;
+      --ok: #62B28B;
+      --focus: #6FB6CE;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -20px rgba(0, 0, 0, .9);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0E1415;
+    --surface: #151D1E;
+    --surface-2: #1B2526;
+    --ink: #E8EEEB;
+    --ink-2: #C3CFCD;
+    --muted: #93A5A4;
+    --rule: #263333;
+    --rule-strong: #354545;
+    --raw: #82A8C2;
+    --corr: #E98B51;
+    --third: #A6C06D;
+    --warn: #E58A76;
+    --warn-bg: #33201C;
+    --ok: #62B28B;
+    --focus: #6FB6CE;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -20px rgba(0, 0, 0, .9);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; }
+
+  header.masthead { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid var(--rule-strong); padding-bottom: 16px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -.015em; margin: 4px 0 6px; text-wrap: balance; }
+  .lede { color: var(--ink-2); max-width: 62ch; margin: 0; }
+  .cite { font-family: var(--mono); font-size: 11.5px; color: var(--muted); max-width: 34ch; text-align: right; line-height: 1.6; }
+  @media (max-width: 720px) { .cite { text-align: left; } }
+
+  .shell { display: grid; grid-template-columns: 312px minmax(0, 1fr); gap: 22px; margin-top: 22px; align-items: start; }
+  @media (max-width: 960px) { .shell { grid-template-columns: minmax(0, 1fr); } }
+
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; box-shadow: var(--shadow); }
+  .panel > .phead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .phead .t { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .phead .n { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .pbody { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+  label.field > span.lab { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  input[type="text"], input[type="number"], select, textarea {
+    font-family: var(--mono); font-size: 13px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--rule-strong); border-radius: 3px; padding: 6px 8px; width: 100%;
+  }
+  textarea { line-height: 1.45; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { font-size: 11.5px; color: var(--muted); }
+
+  button { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--ink); background: var(--surface-2); border: 1px solid var(--rule-strong); border-radius: 3px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--focus); }
+  button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  button.primary:hover { opacity: .88; }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .drop { border: 1px dashed var(--rule-strong); border-radius: 4px; padding: 16px 12px; text-align: center; color: var(--muted); font-size: 12.5px; background: var(--surface-2); cursor: pointer; }
+  .drop.over { border-color: var(--focus); color: var(--ink); }
+  .drop b { color: var(--ink); font-weight: 600; }
+
+  .samples { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+  .srow { display: grid; grid-template-columns: 18px 1fr 66px; gap: 8px; align-items: center; padding: 5px 6px; border: 1px solid transparent; border-radius: 3px; }
+  .srow:hover { background: var(--surface-2); }
+  .srow .swatch { width: 12px; height: 12px; border-radius: 2px; justify-self: center; }
+  .srow .nm { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srow .nm.off { color: var(--muted); text-decoration: line-through; }
+  .srow input[type="number"] { padding: 3px 5px; font-size: 11.5px; }
+  .srow .flag { grid-column: 2 / -1; font-size: 11px; color: var(--warn); font-family: var(--mono); }
+
+  .plotcard { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; box-shadow: var(--shadow); overflow: hidden; }
+  .plottop { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 4px 9px; border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .canvas-holder { position: relative; padding: 8px 10px 4px; }
+  canvas { display: block; width: 100%; height: 440px; touch-action: none; }
+  @media (max-width: 640px) { canvas { height: 320px; } }
+  .readout { position: absolute; top: 14px; right: 18px; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; pointer-events: none; white-space: pre; }
+  .plotfoot { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 8px 14px 12px; border-top: 1px solid var(--rule); font-size: 11.5px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; }
+  .lg .bar { width: 16px; height: 0; border-top-width: 2px; border-top-style: solid; }
+
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 12px; }
+  th { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  th:first-child, td:first-child { text-align: left; }
+  td.delta-real { color: var(--corr); }
+  .tablewrap { overflow-x: auto; }
+
+  .notes { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+  .note h3 { font-size: 13px; margin: 0 0 6px; font-weight: 600; }
+  .note p, .note li { font-size: 12.5px; color: var(--ink-2); margin: 0 0 6px; }
+  .note ul { margin: 0; padding-left: 16px; }
+  .flagbox { border-left: 3px solid var(--warn); background: var(--warn-bg); padding: 8px 12px; font-size: 12.5px; color: var(--ink); border-radius: 0 3px 3px 0; }
+  .okbox { border-left: 3px solid var(--ok); background: var(--surface-2); padding: 8px 12px; font-size: 12.5px; border-radius: 0 3px 3px 0; }
+  code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 2px; }
+  .status { font-family: var(--mono); font-size: 11.5px; color: var(--muted); min-height: 17px; }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+  .steps li { counter-increment: s; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); display: grid; grid-template-columns: 20px 1fr; gap: 6px; }
+  .steps li::before { content: counter(s); color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">ATR-FTIR · Kramers–Krönig correction</div>
+      <h1>ATR-FTIR 보정 워크벤치</h1>
+      <p class="lede">원시 ATR 스펙트럼을 올리면 Bertie–Lan 수정 Kramers–Krönig 절차로 광학상수를 복원해 투과형 FTIR과 비교 가능한 흡광 스펙트럼을 만들고, 보정 전후 피크 위치와 CSV를 내보냅니다.</p>
+    </div>
+    <div class="cite">Kim, Cho &amp; Kwak,<br>Anal. Chem. 2024, 96, 15924–15930<br>doi:10.1021/acs.analchem.4c02779</div>
+  </header>
+
+  <div class="shell">
+    <!-- ───────────── control rail ───────────── -->
+    <div class="rail">
+      <section class="panel">
+        <div class="phead"><span class="t">1 · 데이터</span><span class="n" id="gridinfo">—</span></div>
+        <div class="pbody">
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="스펙트럼 파일 열기">
+            <b>파일 선택</b> 또는 끌어놓기<br>.csv .txt .dat .tsv
+          </div>
+          <input type="file" id="file" accept=".csv,.txt,.dat,.tsv,.asc,.prn,text/plain" multiple hidden>
+          <details>
+            <summary class="hint" style="cursor:pointer">텍스트로 붙여넣기</summary>
+            <textarea id="paste" rows="4" placeholder="wavenumber, sample1, sample2 …" style="margin-top:8px"></textarea>
+            <div class="btnrow" style="margin-top:8px"><button id="parsepaste">붙여넣은 데이터 읽기</button></div>
+          </details>
+          <label class="field">
+            <span class="lab">y축 형식</span>
+            <select id="ytype">
+              <option value="auto">자동 감지</option>
+              <option value="percent">투과·반사율 %T / %R (0–100)</option>
+              <option value="fraction">투과·반사율 T / R (0–1)</option>
+              <option value="absorbance">흡광도 A = pATR</option>
+              <option value="fullscale">직접 지정한 전스케일 값</option>
+            </select>
+          </label>
+          <label class="field" id="fswrap" hidden>
+            <span class="lab">전스케일 (100%에 해당하는 값)</span>
+            <input type="number" id="fullscale" value="4" step="any">
+          </label>
+          <label class="field">
+            <span class="lab">기준선 정규화 구간 (cm⁻¹)</span>
+            <div class="row2">
+              <input type="number" id="base1" value="1900" step="any">
+              <input type="number" id="base2" value="2100" step="any">
+            </div>
+          </label>
+          <div class="hint">흡수가 없는 구간을 지정하면 그 구간의 중앙값을 100%로 삼습니다. 구간에 데이터가 없으면 상위 백분위수를 사용합니다.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">2 · ATR 조건</span></div>
+        <div class="pbody">
+          <div class="row2">
+            <label class="field"><span class="lab">결정 n₀</span>
+              <select id="crystal">
+                <option value="2.4" selected>ZnSe 2.40</option>
+                <option value="2.4">다이아몬드 2.40</option>
+                <option value="4.0">Ge 4.00</option>
+                <option value="2.38">KRS-5 2.38</option>
+                <option value="custom">직접 입력</option>
+              </select>
+            </label>
+            <label class="field"><span class="lab">입사각 θ (°)</span><input type="number" id="angle" value="45" step="any"></label>
+          </div>
+          <label class="field" id="n0wrap" hidden><span class="lab">n₀ 직접 입력</span><input type="number" id="n0custom" value="2.4" step="any"></label>
+          <div class="row2">
+            <label class="field"><span class="lab">기본 n(∞)</span><input type="number" id="ninf" value="1.40" step="0.01"></label>
+            <label class="field"><span class="lab">경로 l (µm)</span><input type="number" id="path" value="1" step="any"></label>
+          </div>
+          <div class="hint">n(∞)는 시료의 고주파 굴절률입니다. 시료별로 3 · 시료 목록에서 개별 지정할 수 있습니다. 논문 식 (15)의 Θs(∞)가 이 값으로 결정됩니다.</div>
+          <div class="btnrow">
+            <button class="primary" id="run">보정 실행</button>
+            <button id="scan">n(∞) 스캔</button>
+          </div>
+          <div class="status" id="status"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">3 · 시료 · n(∞)</span><span class="n" id="scount">0</span></div>
+        <div class="pbody">
+          <div class="samples" id="samples"></div>
+          <div class="hint">이름을 누르면 그래프에서 감추거나 보일 수 있습니다.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">4 · 내보내기</span></div>
+        <div class="pbody">
+          <div class="btnrow">
+            <button id="dl">CSV 저장</button>
+            <button id="copy">CSV 복사</button>
+            <button id="dlpng">그래프 PNG</button>
+          </div>
+          <div class="hint">CSV 열: wavenumber, 시료별 raw pATR · 보정 A · n · k · 부분보정(침투깊이 정규화).</div>
+          <div class="status" id="exportstatus"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ───────────── main ───────────── -->
+    <div>
+      <div class="plotcard">
+        <div class="plottop">
+          <div class="chips" id="viewchips" role="group" aria-label="표시할 스펙트럼">
+            <button class="chip" data-view="both" aria-pressed="true">원시 + 보정</button>
+            <button class="chip" data-view="raw" aria-pressed="false">원시 pATR</button>
+            <button class="chip" data-view="corr" aria-pressed="false">보정 A</button>
+            <button class="chip" data-view="partial" aria-pressed="false">부분보정</button>
+            <button class="chip" data-view="n" aria-pressed="false">n(ν)</button>
+            <button class="chip" data-view="k" aria-pressed="false">k(ν)</button>
+          </div>
+          <div class="chips" id="rangechips" role="group" aria-label="파수 구간">
+            <button class="chip" data-lo="" data-hi="">전체</button>
+            <button class="chip" data-lo="1000" data-hi="1800">1800–1000</button>
+            <button class="chip" data-lo="1145" data-hi="1215">νs(SO₂)</button>
+            <button class="chip" data-lo="1350" data-hi="1400">νas(SO₂)</button>
+            <button class="chip" data-lo="1050" data-hi="1135">C–O–C</button>
+            <button class="chip" data-lo="700" data-hi="800">S–N–S</button>
+            <button class="chip" data-lo="1650" data-hi="1800">C=O</button>
+          </div>
+        </div>
+        <div class="canvas-holder">
+          <canvas id="plot"></canvas>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="plotfoot">
+          <div class="legend" id="legend"></div>
+          <span style="margin-left:auto">드래그: 구간 확대 · 더블클릭: 전체 보기</span>
+        </div>
+      </div>
+
+      <section class="panel" style="margin-top:16px">
+        <div class="phead"><span class="t">보이는 구간의 피크</span><span class="n" id="peakrange">—</span></div>
+        <div class="pbody" style="padding-top:0">
+          <div class="tablewrap">
+            <table id="peaktable">
+              <thead><tr><th>시료</th><th>n(∞)</th><th>원시 피크</th><th>보정 피크</th><th>Δ</th><th>보정 A<sub>max</sub></th><th>R<sub>min</sub></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="flags"></div>
+        </div>
+      </section>
+
+      <div class="notes">
+        <div class="note panel" style="padding:14px">
+          <h3>보정 절차</h3>
+          <ol class="steps">
+            <li>pATR → 반사율 R → Rs (45°: Rp = Rs²)</li>
+            <li>ln√Rs의 수정 KK 적분(Maclaurin)으로 위상 Θs</li>
+            <li>Fresnel 역산으로 n̂ = n + ik</li>
+            <li>A = 1.74πkνl 로 재구성 (식 16)</li>
+          </ol>
+          <p style="margin-top:8px" class="hint">모사 스펙트럼 검증: 원시 ATR에서 6–7 cm⁻¹ red shift 된 밴드를 0.1 cm⁻¹ 이내로 복원합니다.</p>
+        </div>
+        <div class="note panel" style="padding:14px">
+          <h3>읽을 때 주의</h3>
+          <ul>
+            <li>R<sub>min</sub>이 0.02 아래로 내려간 시료는 전반사 조건이 깨져 그 밴드의 위치·세기를 신뢰할 수 없습니다.</li>
+            <li>n(∞)를 잘못 잡으면 배위수가 과대·과소평가됩니다. 논문에서도 1 M DMC/LiClO₄의 CN이 3.05–3.2로 흔들렸습니다.</li>
+            <li>부분보정(장비 기본 ATR correction)은 흡광이 강한 전해액에서 거의 효과가 없습니다.</li>
+          </ul>
+        </div>
+        <div class="note panel" style="padding:14px">
+          <h3>입력 형식</h3>
+          <ul>
+            <li>쉼표·탭·공백 구분을 자동 인식합니다.</li>
+            <li>첫 열이 파수인 다중 열, 또는 (x,y)(x,y)… 쌍 배열 모두 읽습니다.</li>
+            <li>헤더 행이 있으면 시료 이름으로 씁니다.</li>
+            <li>파수 간격이 일정하지 않으면 균일 격자로 보간합니다.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const LN10 = Math.LN10;
+  const PALETTE = ["#4E6C82", "#C4561F", "#6E8B3D", "#8A5FA8", "#2E7A57", "#B0402F", "#3F7E94", "#9A7A2E"];
+
+  /* ───────── state ───────── */
+  const S = {
+    nu: null,            // Float64Array, ascending, even grid
+    samples: [],         // {name, R, raw, A, n, k, partial, ninf, visible, color, Rmin, flag}
+    view: "both",
+    lo: null, hi: null,
+    resampled: false,
+    demo: true,
+  };
+
+  /* ───────── math: complex helpers ───────── */
+  function csqrtImPos(xr, xi) {           // principal sqrt, then force Im >= 0
+    const r = Math.hypot(xr, xi);
+    let re = Math.sqrt(Math.max((r + xr) / 2, 0));
+    let im = Math.sqrt(Math.max((r - xr) / 2, 0));
+    if (xi < 0) im = -im;
+    if (im < 0) { re = -re; im = -im; }
+    return [re, im];
+  }
+
+  /* ───────── the correction (Anal. Chem. 2024) ───────── */
+  function rsFromUnpolarized(R) {          // R = (Rs + Rs^2)/2
+    return (-1 + Math.sqrt(1 + 8 * R)) / 2;
+  }
+
+  function kkMaclaurin(nu, f) {            // (2/pi) * P∫ f(nu')/(nu'^2 - nu^2) dnu'  → returns the integral term
+    const N = nu.length, h = nu[1] - nu[0], out = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      let sum = 0;
+      const ni2 = nu[i] * nu[i];
+      for (let j = (i % 2 === 0) ? 1 : 0; j < N; j += 2) {
+        sum += f[j] / (nu[j] * nu[j] - ni2);
+      }
+      out[i] = (2 / Math.PI) * 2 * h * nu[i] * sum;
+    }
+    return out;
+  }
+
+  function thetaInf(ninf, n0, thetaRad) {
+    const s = n0 * Math.sin(thetaRad), a = n0 * Math.cos(thetaRad);
+    const inside = s * s - ninf * ninf;
+    if (inside <= 0) return 0;             // n(inf) beyond the TIR limit — guarded by the caller
+    return -2 * Math.atan(Math.sqrt(inside) / a);
+  }
+
+  function correct(nu, R, ninf, n0, angleDeg, pathUm) {
+    const th = angleDeg * Math.PI / 180, N = nu.length;
+    const a = n0 * Math.cos(th), sinTerm = (n0 * Math.sin(th)) ** 2;
+    const lnr = new Float64Array(N), Rs = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const rs = rsFromUnpolarized(Math.min(Math.max(R[i], 1e-6), 1));
+      Rs[i] = rs;
+      lnr[i] = 0.5 * Math.log(rs);
+    }
+    const integral = kkMaclaurin(nu, lnr), th_inf = thetaInf(ninf, n0, th);
+    const n = new Float64Array(N), k = new Float64Array(N), A = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const phase = th_inf - integral[i];
+      const sr = Math.sqrt(Rs[i]);
+      const rr = sr * Math.cos(phase), ri = sr * Math.sin(phase);
+      // xi = a (1 - r) / (1 + r)
+      const numR = 1 - rr, numI = -ri, denR = 1 + rr, denI = ri;
+      const den = denR * denR + denI * denI;
+      const xr = a * (numR * denR + numI * denI) / den;
+      const xi = a * (numI * denR - numR * denI) / den;
+      const [nr, ni] = csqrtImPos(xr * xr - xi * xi + sinTerm, 2 * xr * xi);
+      n[i] = nr;
+      k[i] = Math.max(ni, 0);
+      A[i] = 4 * Math.PI * k[i] * nu[i] * (pathUm * 1e-4) / LN10;
+    }
+    return { n, k, A };
+  }
+
+  function partialCorrect(nu, raw) {       // constant-n penetration-depth normalization (dp ∝ 1/nu)
+    const out = new Float64Array(nu.length);
+    for (let i = 0; i < nu.length; i++) out[i] = raw[i] * nu[i] / 1000;
+    return out;
+  }
+
+  /* ───────── parsing ───────── */
+  function splitLine(line) {
+    if (line.indexOf("\t") >= 0) return line.split("\t");
+    if (line.indexOf(",") >= 0) return line.split(",");
+    if (line.indexOf(";") >= 0) return line.split(";");
+    return line.trim().split(/\s+/);
+  }
+  const isNum = (t) => t !== "" && t != null && isFinite(parseFloat(t));
+
+  function parseText(text, fallbackName) {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+    if (!lines.length) throw new Error("빈 파일입니다.");
+    let start = 0, names = null;
+    const first = splitLine(lines[0]);
+    const numericFirst = first.filter(isNum).length;
+    if (numericFirst < Math.max(1, first.length - 1)) {
+      names = first.map((t) => t.trim()).filter((t) => t !== "");
+      start = 1;
+    }
+    const rows = [];
+    for (let i = start; i < lines.length; i++) {
+      const parts = splitLine(lines[i]).map((t) => parseFloat(t));
+      if (parts.length < 2 || !isFinite(parts[0])) continue;
+      rows.push(parts);
+    }
+    if (rows.length < 8) throw new Error("숫자 행이 너무 적습니다.");
+    const ncol = Math.min.apply(null, rows.slice(0, 50).map((r) => r.length));
+    // paired (x,y)(x,y)… layout?
+    let paired = false;
+    if (ncol >= 4 && ncol % 2 === 0) {
+      let same = 0, checked = 0;
+      for (let i = 0; i < rows.length; i += Math.ceil(rows.length / 20)) {
+        for (let c = 2; c < ncol; c += 2) { checked++; if (Math.abs(rows[i][c] - rows[i][0]) < 1e-6) same++; }
+      }
+      paired = checked > 0 && same / checked > 0.9;
+    }
+    const series = [];
+    const x = rows.map((r) => r[0]);
+    if (paired) {
+      for (let c = 1; c < ncol; c += 2) series.push({ name: pickName(names, c, (c - 1) / 2, fallbackName), y: rows.map((r) => r[c]) });
+    } else {
+      for (let c = 1; c < ncol; c++) series.push({ name: pickName(names, c, c - 1, fallbackName), y: rows.map((r) => r[c]) });
+    }
+    return { x, series };
+  }
+
+  function pickName(names, col, idx, fallback) {
+    if (names) {
+      const cand = names[col] || names[idx + 1] || names[idx];
+      if (cand && !isNum(cand)) return cand;
+      // header may hold only sample names (no x labels)
+      const only = names.filter((t) => !isNum(t));
+      if (only[idx]) return only[idx];
+    }
+    return fallback ? `${fallback}#${idx + 1}` : `sample ${idx + 1}`;
+  }
+
+  function toEvenGrid(x, seriesList) {
+    const order = x.map((v, i) => i).sort((p, q) => x[p] - x[q]);
+    const xs = order.map((i) => x[i]);
+    const ys = seriesList.map((s) => order.map((i) => s.y[i]));
+    // drop duplicates
+    const xu = [], yu = ys.map(() => []);
+    for (let i = 0; i < xs.length; i++) {
+      if (i && Math.abs(xs[i] - xs[i - 1]) < 1e-9) continue;
+      xu.push(xs[i]); ys.forEach((yy, s) => yu[s].push(yy[i]));
+    }
+    const steps = [];
+    for (let i = 1; i < xu.length; i++) steps.push(xu[i] - xu[i - 1]);
+    steps.sort((a, b) => a - b);
+    const med = steps[Math.floor(steps.length / 2)];
+    const spread = (steps[steps.length - 1] - steps[0]) / med;
+    const MAXN = 4200;
+    let N = Math.floor((xu[xu.length - 1] - xu[0]) / med) + 1;
+    const uneven = spread > 0.02 || N > MAXN;
+    if (!uneven) {
+      return { nu: Float64Array.from(xu), ys: yu.map((a) => Float64Array.from(a)), resampled: false };
+    }
+    N = Math.min(N, MAXN);
+    const step = (xu[xu.length - 1] - xu[0]) / (N - 1);
+    const nu = new Float64Array(N);
+    for (let i = 0; i < N; i++) nu[i] = xu[0] + i * step;
+    const out = yu.map((yy) => {
+      const res = new Float64Array(N);
+      let j = 0;
+      for (let i = 0; i < N; i++) {
+        const t = nu[i];
+        while (j < xu.length - 2 && xu[j + 1] < t) j++;
+        const f = (t - xu[j]) / (xu[j + 1] - xu[j]);
+        res[i] = yy[j] + f * (yy[j + 1] - yy[j]);
+      }
+      return res;
+    });
+    return { nu, ys: out, resampled: true };
+  }
+
+  function quantile(arr, q) {
+    const a = Array.from(arr).filter(isFinite).sort((p, r) => p - r);
+    return a[Math.min(a.length - 1, Math.max(0, Math.floor(q * (a.length - 1))))];
+  }
+
+  function toReflectance(nu, y) {
+    const mode = $("ytype").value;
+    const n = y.length;
+    let R = new Float64Array(n);
+    if (mode === "absorbance") {
+      for (let i = 0; i < n; i++) R[i] = Math.pow(10, -y[i]);
+    } else {
+      let scale;
+      if (mode === "fraction") scale = 1;
+      else if (mode === "percent") scale = 100;
+      else if (mode === "fullscale") scale = parseFloat($("fullscale").value) || 1;
+      else {                                        // auto
+        const hi = quantile(y, 0.995);
+        scale = hi > 3 ? (hi > 50 ? 100 : hi) : 1;
+      }
+      for (let i = 0; i < n; i++) R[i] = y[i] / scale;
+    }
+    // baseline normalization
+    const b1 = parseFloat($("base1").value), b2 = parseFloat($("base2").value);
+    const lo = Math.min(b1, b2), hi = Math.max(b1, b2);
+    const inWin = [];
+    for (let i = 0; i < n; i++) if (nu[i] >= lo && nu[i] <= hi && isFinite(R[i])) inWin.push(R[i]);
+    let base;
+    if (inWin.length > 4) { inWin.sort((p, q) => p - q); base = inWin[Math.floor(inWin.length / 2)]; }
+    else base = quantile(R, 0.99);
+    if (isFinite(base) && base > 0) for (let i = 0; i < n; i++) R[i] /= base;
+    let Rmin = Infinity;
+    for (let i = 0; i < n; i++) { if (R[i] < Rmin) Rmin = R[i]; R[i] = Math.min(Math.max(R[i], 1e-3), 1); }
+    return { R, Rmin };
+  }
+
+  /* ───────── demo spectrum (simulated, not measured) ───────── */
+  function lorentzATR(nu, ninf, osc, n0, angleDeg) {
+    const th = angleDeg * Math.PI / 180, a = n0 * Math.cos(th), s2 = (n0 * Math.sin(th)) ** 2;
+    const R = new Float64Array(nu.length);
+    for (let i = 0; i < nu.length; i++) {
+      let er = ninf * ninf, ei = 0;
+      for (const [nu0, St, g] of osc) {
+        const dr = nu0 * nu0 - nu[i] * nu[i], di = -g * nu[i];
+        const den = dr * dr + di * di;
+        er += St * nu0 * nu0 * dr / den;
+        ei += -St * nu0 * nu0 * di / den;
+      }
+      const [nr, ni] = csqrtImPos(er, ei);
+      const [xr, xi] = csqrtImPos(nr * nr - ni * ni - s2, 2 * nr * ni);
+      const dr = a + xr, di = xi;
+      const den = dr * dr + di * di;
+      const rr = ((a - xr) * dr + (-xi) * di) / den, ri = ((-xi) * dr - (a - xr) * di) / den;
+      const Rs = rr * rr + ri * ri;
+      R[i] = (Rs + Rs * Rs) / 2;
+    }
+    return R;
+  }
+
+  function loadDemo() {
+    const N = 3600, nu = new Float64Array(N);
+    for (let i = 0; i < N; i++) nu[i] = 650 + i;
+    const base = [[1180, 0.0, 13], [1375, 0.010, 16], [1085, 0.013, 16], [745, 0.004, 15]];
+    const defs = [
+      { name: "demo · 약흡수", strength: 0.006, ninf: 1.40 },
+      { name: "demo · 중간", strength: 0.014, ninf: 1.40 },
+      { name: "demo · 강흡수", strength: 0.024, ninf: 1.40 },
+    ];
+    S.nu = nu; S.samples = []; S.resampled = false; S.demo = true;
+    defs.forEach((d, i) => {
+      const osc = base.map((o) => (o[0] === 1180 ? [1180, d.strength, 13] : o));
+      const R = lorentzATR(nu, d.ninf, osc, 2.4, 45);
+      let Rmin = Infinity; for (let j = 0; j < N; j++) Rmin = Math.min(Rmin, R[j]);
+      S.samples.push(makeSample(d.name, R, Rmin, i));
+    });
+    $("ytype").value = "fraction";
+    $("gridinfo").textContent = `${N} pts · 1.0 cm⁻¹`;
+    renderSamples(); runCorrection();
+  }
+
+  function makeSample(name, R, Rmin, idx) {
+    const raw = new Float64Array(R.length);
+    for (let i = 0; i < R.length; i++) raw[i] = -Math.log10(R[i]);
+    return {
+      name, R, raw, Rmin, ninf: parseFloat($("ninf").value) || 1.4,
+      visible: true, color: PALETTE[idx % PALETTE.length],
+      A: null, n: null, k: null, partial: null,
+    };
+  }
+
+  /* ───────── ingest ───────── */
+  function ingest(text, fallbackName) {
+    const { x, series } = parseText(text, fallbackName);
+    const g = toEvenGrid(x, series);
+    S.nu = g.nu; S.resampled = g.resampled; S.demo = false;
+    const startIdx = 0;
+    S.samples = series.map((s, i) => {
+      const { R, Rmin } = toReflectance(g.nu, g.ys[i]);
+      return makeSample(s.name, R, Rmin, startIdx + i);
+    });
+    const step = (g.nu[g.nu.length - 1] - g.nu[0]) / (g.nu.length - 1);
+    $("gridinfo").textContent = `${g.nu.length} pts · ${step.toFixed(2)} cm⁻¹${g.resampled ? " · 보간" : ""}`;
+    S.lo = S.hi = null;
+    renderSamples();
+    runCorrection();
+  }
+
+  function reconvert() {                     // y-type / baseline changed → rebuild R from nothing stored: re-ingest needed
+    if (S.demo) { loadDemo(); return; }
+    if (S.lastText) ingest(S.lastText, S.lastName);
+  }
+
+  /* ───────── run ───────── */
+  let busy = false;
+  async function runCorrection() {
+    if (!S.nu || busy) return;
+    busy = true;
+    const n0 = $("crystal").value === "custom" ? (parseFloat($("n0custom").value) || 2.4) : parseFloat($("crystal").value);
+    const angle = parseFloat($("angle").value) || 45;
+    const pathUm = parseFloat($("path").value) || 1;
+    const tirLimit = n0 * Math.sin(angle * Math.PI / 180);
+    const t0 = performance.now();
+    for (let i = 0; i < S.samples.length; i++) {
+      const s = S.samples[i];
+      $("status").textContent = `보정 중 ${i + 1}/${S.samples.length} · ${s.name}`;
+      await new Promise((r) => setTimeout(r, 0));
+      s.tirWarn = s.ninf >= tirLimit;
+      const out = correct(S.nu, s.R, Math.min(s.ninf, tirLimit - 1e-4), n0, angle, pathUm);
+      s.A = out.A; s.n = out.n; s.k = out.k;
+      s.partial = partialCorrect(S.nu, s.raw);
+    }
+    $("status").textContent = `완료 · ${S.samples.length}개 시료 · ${Math.round(performance.now() - t0)} ms`;
+    busy = false;
+    draw(); renderPeaks(); renderFlags();
+  }
+
+  async function scanNinf() {
+    const vis = S.samples.filter((s) => s.visible);
+    if (!vis.length) return;
+    const s = vis[0];
+    const n0 = $("crystal").value === "custom" ? (parseFloat($("n0custom").value) || 2.4) : parseFloat($("crystal").value);
+    const angle = parseFloat($("angle").value) || 45, pathUm = parseFloat($("path").value) || 1;
+    const lo = S.lo ?? S.nu[0], hi = S.hi ?? S.nu[S.nu.length - 1];
+    const rows = [];
+    for (let v = 1.20; v <= 1.61; v += 0.05) {
+      $("status").textContent = `n(∞) 스캔 ${v.toFixed(2)} · ${s.name}`;
+      await new Promise((r) => setTimeout(r, 0));
+      const out = correct(S.nu, s.R, v, n0, angle, pathUm);
+      const p = peakIn(S.nu, out.A, lo, hi);
+      rows.push(`n(∞)=${v.toFixed(2)} → ${p ? p.x.toFixed(1) : "—"} cm⁻¹, A=${p ? p.y.toFixed(3) : "—"}`);
+    }
+    $("status").textContent = `${s.name} · 보이는 구간 n(∞) 스캔`;
+    $("flags").innerHTML = `<div class="okbox" style="margin-top:10px"><b>${esc(s.name)}</b> · n(∞) 민감도<br><span style="font-family:var(--mono);font-size:11.5px">${rows.join("<br>")}</span></div>`;
+  }
+
+  /* ───────── peaks ───────── */
+  function peakIn(nu, y, lo, hi) {
+    let best = -Infinity, bi = -1;
+    for (let i = 1; i < nu.length - 1; i++) {
+      if (nu[i] < lo || nu[i] > hi) continue;
+      if (y[i] > best) { best = y[i]; bi = i; }
+    }
+    if (bi <= 0) return null;
+    const a = y[bi - 1], b = y[bi], c = y[bi + 1], d = a - 2 * b + c;
+    const dx = d !== 0 ? 0.5 * (a - c) / d * (nu[1] - nu[0]) : 0;
+    return { x: nu[bi] + (isFinite(dx) ? dx : 0), y: b };
+  }
+
+  function renderPeaks() {
+    const tb = $("peaktable").querySelector("tbody");
+    const lo = S.lo ?? S.nu[0], hi = S.hi ?? S.nu[S.nu.length - 1];
+    $("peakrange").textContent = `${Math.round(lo)}–${Math.round(hi)} cm⁻¹`;
+    tb.innerHTML = "";
+    S.samples.filter((s) => s.visible).forEach((s) => {
+      const pr = peakIn(S.nu, s.raw, lo, hi), pc = s.A ? peakIn(S.nu, s.A, lo, hi) : null;
+      const d = pr && pc ? pc.x - pr.x : null;
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${s.color};margin-right:6px"></span>${esc(s.name)}</td>` +
+        `<td>${s.ninf.toFixed(2)}</td>` +
+        `<td>${pr ? pr.x.toFixed(1) : "—"}</td>` +
+        `<td>${pc ? pc.x.toFixed(1) : "—"}</td>` +
+        `<td class="${d !== null && Math.abs(d) >= 2 ? "delta-real" : ""}">${d !== null ? (d > 0 ? "+" : "") + d.toFixed(1) : "—"}</td>` +
+        `<td>${pc ? pc.y.toFixed(3) : "—"}</td>` +
+        `<td>${s.Rmin.toFixed(3)}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderFlags() {
+    const bad = S.samples.filter((s) => s.visible && s.Rmin < 0.02);
+    const tir = S.samples.filter((s) => s.visible && s.tirWarn);
+    let html = "";
+    if (bad.length) html += `<div class="flagbox" style="margin-top:10px"><b>포화 경고</b> — ${bad.map((s) => esc(s.name) + ` (R<sub>min</sub> ${s.Rmin.toFixed(3)})`).join(", ")}: 반사율이 0에 근접해 전반사 조건이 깨집니다. 해당 밴드의 보정 결과는 정량에 쓰지 마세요.</div>`;
+    if (tir.length) html += `<div class="flagbox" style="margin-top:10px"><b>n(∞) 한계</b> — ${tir.map((s) => esc(s.name)).join(", ")}: n(∞)가 n₀·sinθ 이상이라 전반사가 성립하지 않습니다. 값을 낮추세요.</div>`;
+    if (S.resampled) html += `<div class="okbox" style="margin-top:10px">파수 간격이 일정하지 않아 균일 격자로 보간했습니다. KK 적분에는 균일 격자가 필요합니다.</div>`;
+    if (S.demo) html += `<div class="okbox" style="margin-top:10px"><b>예시 데이터</b> — Lorentz 진동자로 만든 <i>시뮬레이션</i> 스펙트럼입니다(실측 아님). 1180 cm⁻¹ 밴드의 참값은 진동자 위치 1180 cm⁻¹이며, 흡수가 강할수록 원시 ATR에서 더 크게 red shift 하는 것을 볼 수 있습니다. 파일을 올리면 교체됩니다.</div>`;
+    $("flags").innerHTML = html;
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ───────── sample list ───────── */
+  function renderSamples() {
+    const box = $("samples");
+    box.innerHTML = "";
+    $("scount").textContent = String(S.samples.length);
+    S.samples.forEach((s, i) => {
+      const row = document.createElement("div");
+      row.className = "srow";
+      const sw = document.createElement("span"); sw.className = "swatch"; sw.style.background = s.color;
+      const nm = document.createElement("button");
+      nm.className = "nm" + (s.visible ? "" : " off");
+      nm.style.cssText = "background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit";
+      nm.textContent = s.name; nm.title = "표시 전환";
+      nm.addEventListener("click", () => { s.visible = !s.visible; renderSamples(); draw(); renderPeaks(); renderFlags(); });
+      const inp = document.createElement("input");
+      inp.type = "number"; inp.step = "0.01"; inp.value = s.ninf.toFixed(2); inp.setAttribute("aria-label", s.name + " n(infinity)");
+      inp.id = "ninf-" + i;
+      inp.addEventListener("change", () => { s.ninf = parseFloat(inp.value) || 1.4; runCorrection(); });
+      row.append(sw, nm, inp);
+      box.appendChild(row);
+    });
+  }
+
+  /* ───────── plot ───────── */
+  const cv = $("plot"), ctx = cv.getContext("2d");
+  let geom = null;
+
+  function series(s) {
+    switch (S.view) {
+      case "raw": return [{ y: s.raw, dash: [], label: "raw" }];
+      case "corr": return [{ y: s.A, dash: [], label: "corr" }];
+      case "partial": return [{ y: s.partial, dash: [], label: "partial" }];
+      case "n": return [{ y: s.n, dash: [], label: "n" }];
+      case "k": return [{ y: s.k, dash: [], label: "k" }];
+      default: return [{ y: s.raw, dash: [4, 3], label: "raw" }, { y: s.A, dash: [], label: "corr" }];
+    }
+  }
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function draw() {
+    if (!S.nu) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const inkC = css("--ink"), mutedC = css("--muted"), ruleC = css("--rule");
+    const padL = 54, padR = 14, padT = 14, padB = 34;
+    const lo = S.lo ?? S.nu[0], hi = S.hi ?? S.nu[S.nu.length - 1];
+    const vis = S.samples.filter((s) => s.visible);
+
+    let ymax = -Infinity, ymin = Infinity;
+    vis.forEach((s) => series(s).forEach((tr) => {
+      if (!tr.y) return;
+      for (let i = 0; i < S.nu.length; i++) {
+        if (S.nu[i] < lo || S.nu[i] > hi) continue;
+        const v = tr.y[i];
+        if (!isFinite(v)) continue;
+        if (v > ymax) ymax = v;
+        if (v < ymin) ymin = v;
+      }
+    }));
+    if (!isFinite(ymax)) { ymax = 1; ymin = 0; }
+    if (S.view !== "n") ymin = Math.min(ymin, 0);
+    const span = (ymax - ymin) || 1;
+    ymax += span * 0.08; ymin -= span * 0.04;
+
+    geom = { padL, padR, padT, padB, w, h, lo, hi, ymin, ymax };
+    const X = (nu) => padL + (hi - nu) / (hi - lo) * (w - padL - padR);   // wavenumber decreases to the right
+    const Y = (v) => padT + (ymax - v) / (ymax - ymin) * (h - padT - padB);
+
+    // grid + axes
+    ctx.strokeStyle = ruleC; ctx.fillStyle = mutedC; ctx.lineWidth = 1;
+    ctx.font = '11px "IBM Plex Mono", monospace'; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const xticks = niceTicks(lo, hi, 7);
+    xticks.forEach((t) => {
+      const x = Math.round(X(t)) + .5;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+      ctx.fillText(String(Math.round(t)), x, h - padB + 6);
+    });
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    niceTicks(ymin, ymax, 5).forEach((t) => {
+      const y = Math.round(Y(t)) + .5;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+      ctx.fillText(fmt(t), padL - 8, y);
+    });
+    ctx.strokeStyle = css("--rule-strong");
+    ctx.beginPath(); ctx.moveTo(padL + .5, padT); ctx.lineTo(padL + .5, h - padB + .5); ctx.lineTo(w - padR, h - padB + .5); ctx.stroke();
+    ctx.fillStyle = mutedC; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("ν (cm⁻¹)", (padL + w - padR) / 2, h - 14);
+
+    // traces
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    vis.forEach((s) => series(s).forEach((tr) => {
+      if (!tr.y) return;
+      ctx.beginPath(); ctx.setLineDash(tr.dash); ctx.strokeStyle = s.color;
+      ctx.lineWidth = tr.dash.length ? 1.1 : 1.8;
+      ctx.globalAlpha = tr.dash.length ? .75 : 1;
+      let started = false;
+      for (let i = 0; i < S.nu.length; i++) {
+        const nu = S.nu[i];
+        if (nu < lo || nu > hi) continue;
+        const v = tr.y[i];
+        if (!isFinite(v)) { started = false; continue; }
+        const x = X(nu), y = Y(v);
+        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+      }
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }));
+
+    // selection overlay
+    if (sel.active && sel.x0 !== null && sel.x1 !== null) {
+      ctx.fillStyle = css("--focus") + "22";
+      ctx.fillRect(Math.min(sel.x0, sel.x1), padT, Math.abs(sel.x1 - sel.x0), h - padT - padB);
+    }
+    drawLegend();
+  }
+
+  function drawLegend() {
+    const L = $("legend");
+    const parts = [];
+    if (S.view === "both") {
+      parts.push(`<span class="lg"><span class="bar" style="border-top-color:${css("--muted")};border-top-style:dashed"></span>원시 pATR</span>`);
+      parts.push(`<span class="lg"><span class="bar" style="border-top-color:${css("--ink")}"></span>KK 보정 A</span>`);
+    }
+    S.samples.filter((s) => s.visible).forEach((s) => {
+      parts.push(`<span class="lg"><span class="bar" style="border-top-color:${s.color}"></span>${esc(s.name)}</span>`);
+    });
+    L.innerHTML = parts.join("");
+  }
+
+  function fmt(v) {
+    const a = Math.abs(v);
+    if (a >= 100) return v.toFixed(0);
+    if (a >= 10) return v.toFixed(1);
+    if (a >= 1) return v.toFixed(2);
+    return v.toFixed(3);
+  }
+
+  function niceTicks(lo, hi, count) {
+    const span = hi - lo;
+    if (!(span > 0)) return [lo];
+    const raw = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    const step = (norm >= 5 ? 5 : norm >= 2 ? 2 : 1) * mag;
+    const out = [];
+    for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) out.push(t);
+    return out;
+  }
+
+  /* ───────── interaction ───────── */
+  const sel = { active: false, x0: null, x1: null };
+  function pxToNu(px) {
+    if (!geom) return null;
+    const { padL, padR, w, lo, hi } = geom;
+    const f = (px - padL) / (w - padL - padR);
+    return hi - f * (hi - lo);
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    const r = cv.getBoundingClientRect();
+    sel.active = true; sel.x0 = e.clientX - r.left; sel.x1 = sel.x0;
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener("pointermove", (e) => {
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left;
+    if (sel.active) { sel.x1 = px; draw(); }
+    const nu = pxToNu(px);
+    if (nu != null && S.nu) {
+      const i = Math.max(0, Math.min(S.nu.length - 1, Math.round((nu - S.nu[0]) / (S.nu[1] - S.nu[0]))));
+      const vis = S.samples.filter((s) => s.visible).slice(0, 4);
+      const lines = [`ν ${S.nu[i].toFixed(1)} cm⁻¹`];
+      vis.forEach((s) => {
+        const tr = series(s)[series(s).length - 1];
+        const v = tr.y ? tr.y[i] : NaN;
+        lines.push(`${s.name.slice(0, 14)} ${isFinite(v) ? v.toFixed(3) : "—"}`);
+      });
+      $("readout").textContent = lines.join("\n");
+    }
+  });
+  cv.addEventListener("pointerup", () => {
+    if (!sel.active) return;
+    sel.active = false;
+    if (sel.x0 != null && sel.x1 != null && Math.abs(sel.x1 - sel.x0) > 12) {
+      const a = pxToNu(sel.x0), b = pxToNu(sel.x1);
+      S.lo = Math.min(a, b); S.hi = Math.max(a, b);
+      setRangeChips(null);
+      draw(); renderPeaks();
+    } else draw();
+    sel.x0 = sel.x1 = null;
+  });
+  cv.addEventListener("dblclick", () => { S.lo = S.hi = null; setRangeChips(null); draw(); renderPeaks(); });
+  cv.addEventListener("pointerleave", () => { $("readout").textContent = ""; });
+
+  function setRangeChips(active) {
+    document.querySelectorAll("#rangechips .chip").forEach((c) => c.setAttribute("aria-pressed", c === active ? "true" : "false"));
+  }
+  document.querySelectorAll("#rangechips .chip").forEach((c) => c.addEventListener("click", () => {
+    const lo = parseFloat(c.dataset.lo), hi = parseFloat(c.dataset.hi);
+    S.lo = isFinite(lo) ? lo : null; S.hi = isFinite(hi) ? hi : null;
+    setRangeChips(c); draw(); renderPeaks();
+  }));
+  document.querySelectorAll("#viewchips .chip").forEach((c) => c.addEventListener("click", () => {
+    S.view = c.dataset.view;
+    document.querySelectorAll("#viewchips .chip").forEach((o) => o.setAttribute("aria-pressed", o === c ? "true" : "false"));
+    draw();
+  }));
+
+  /* ───────── files ───────── */
+  function readFiles(list) {
+    const files = Array.from(list).slice(0, 8);
+    if (!files.length) return;
+    const reader = new FileReader();
+    const f = files[0];
+    reader.onload = () => {
+      try {
+        S.lastText = String(reader.result); S.lastName = f.name.replace(/\.[^.]+$/, "");
+        ingest(S.lastText, S.lastName);
+        $("status").textContent = `${f.name} 읽음`;
+      } catch (err) {
+        $("status").textContent = "읽기 실패: " + err.message;
+      }
+    };
+    reader.readAsText(f);
+  }
+  $("drop").addEventListener("click", () => $("file").click());
+  $("drop").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+  $("file").addEventListener("change", (e) => readFiles(e.target.files));
+  ["dragenter", "dragover"].forEach((t) => $("drop").addEventListener(t, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => $("drop").addEventListener(t, (e) => { e.preventDefault(); $("drop").classList.remove("over"); }));
+  $("drop").addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) readFiles(e.dataTransfer.files); });
+  $("parsepaste").addEventListener("click", () => {
+    const t = $("paste").value;
+    if (!t.trim()) return;
+    try { S.lastText = t; S.lastName = "pasted"; ingest(t, "pasted"); $("status").textContent = "붙여넣은 데이터를 읽었습니다."; }
+    catch (err) { $("status").textContent = "읽기 실패: " + err.message; }
+  });
+
+  /* ───────── settings wiring ───────── */
+  $("ytype").addEventListener("change", () => { $("fswrap").hidden = $("ytype").value !== "fullscale"; reconvert(); });
+  $("fullscale").addEventListener("change", reconvert);
+  $("base1").addEventListener("change", reconvert);
+  $("base2").addEventListener("change", reconvert);
+  $("crystal").addEventListener("change", () => { $("n0wrap").hidden = $("crystal").value !== "custom"; runCorrection(); });
+  ["n0custom", "angle", "path"].forEach((id) => $(id).addEventListener("change", runCorrection));
+  $("ninf").addEventListener("change", () => {
+    const v = parseFloat($("ninf").value) || 1.4;
+    S.samples.forEach((s) => { s.ninf = v; });
+    renderSamples(); runCorrection();
+  });
+  $("run").addEventListener("click", runCorrection);
+  $("scan").addEventListener("click", scanNinf);
+
+  /* ───────── export ───────── */
+  function buildCSV() {
+    const head = ["wavenumber_cm-1"];
+    const cols = [S.nu];
+    S.samples.forEach((s) => {
+      head.push(`${s.name}_pATR_raw`, `${s.name}_A_KKcorr`, `${s.name}_n`, `${s.name}_k`, `${s.name}_A_partial`);
+      cols.push(s.raw, s.A, s.n, s.k, s.partial);
+    });
+    const n0 = $("crystal").value === "custom" ? $("n0custom").value : $("crystal").value;
+    const meta = [
+      `# ATR-FTIR KK correction (Kim, Cho, Kwak, Anal. Chem. 2024, 96, 15924)`,
+      `# crystal n0=${n0}, angle=${$("angle").value} deg, path=${$("path").value} um`,
+      `# n_inf: ${S.samples.map((s) => `${s.name}=${s.ninf.toFixed(2)}`).join("; ")}`,
+    ].join("\n");
+    const lines = [meta, head.join(",")];
+    for (let i = 0; i < S.nu.length; i++) {
+      const row = new Array(cols.length);
+      for (let c = 0; c < cols.length; c++) {
+        const v = cols[c] ? cols[c][i] : NaN;
+        row[c] = isFinite(v) ? (c === 0 ? v.toFixed(4) : v.toPrecision(6)) : "";
+      }
+      lines.push(row.join(","));
+    }
+    return lines.join("\n");
+  }
+
+  let downloads = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then((d) => { downloads = d; if (!d) $("dl").hidden = true; }).catch(() => { $("dl").hidden = true; });
+  } else $("dl").hidden = true;
+
+  $("dl").addEventListener("click", async () => {
+    if (!S.samples.length || !S.samples[0].A) return;
+    if (!downloads) { $("exportstatus").textContent = "이 화면에서는 저장을 쓸 수 없습니다. 복사를 사용하세요."; return; }
+    try {
+      $("exportstatus").textContent = "저장 확인을 기다리는 중…";
+      await downloads.save({ filename: "ATR_KK_corrected.csv", data: buildCSV() });
+      $("exportstatus").textContent = "CSV를 저장했습니다.";
+    } catch (err) {
+      const code = err && err.code;
+      $("exportstatus").textContent = code === "declined" ? "저장을 취소했습니다." : "저장 실패: " + (code || "unknown") + " · 복사를 사용하세요.";
+    }
+  });
+  $("copy").addEventListener("click", async () => {
+    if (!S.samples.length || !S.samples[0].A) return;
+    const csv = buildCSV();
+    try {
+      await navigator.clipboard.writeText(csv);
+      $("exportstatus").textContent = `CSV ${(csv.length / 1024).toFixed(0)} KB를 클립보드에 복사했습니다.`;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = csv; ta.style.cssText = "position:fixed;left:-9999px";
+      document.body.appendChild(ta); ta.select();
+      $("exportstatus").textContent = "복사가 막혀 텍스트를 선택했습니다. Ctrl+C를 누르세요.";
+      setTimeout(() => ta.remove(), 15000);
+    }
+  });
+  $("dlpng").addEventListener("click", async () => {
+    const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+    if (!blob) return;
+    if (!downloads) { $("exportstatus").textContent = "이 화면에서는 그래프 저장을 쓸 수 없습니다."; return; }
+    try {
+      await downloads.save({ filename: "ATR_spectra.png", data: blob });
+      $("exportstatus").textContent = "그래프를 저장했습니다.";
+    } catch (err) {
+      $("exportstatus").textContent = (err && err.code) === "declined" ? "저장을 취소했습니다." : "그래프 저장 실패.";
+    }
+  });
+
+  /* ───────── boot ───────── */
+  window.addEventListener("resize", () => draw());
+  if (window.matchMedia) {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(() => draw());
+  }
+  loadDemo();
+
+  // expose for verification
+  window.__atr = { correct, partialCorrect, peakIn, lorentzATR, state: S };
+})();
+</script>
