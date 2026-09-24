@@ -1,0 +1,1472 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COF PXRD 워크벤치</title>
+<meta name="description" content="COF 분말 XRD의 피크 분석, Pawley 정제, 시뮬레이션·구조 모델 비교를 브라우저에서 수행하는 도구.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ground: #F3F5F3; --surface: #FFFFFF; --surface-2: #EDF1EF;
+    --ink: #111A1B; --ink-2: #3C4C4D; --muted: #5B6B6D;
+    --rule: #DAE2E0; --rule-strong: #BDC9C6;
+    --raw: #4E6C82; --corr: #C4561F; --third: #6E8B3D; --fourth: #7B5EA7;
+    --warn: #B0402F; --warn-bg: #F7E8E4; --ok: #2E7A57; --focus: #1F6F8B;
+    --shadow: 0 1px 2px rgba(17,26,27,.06), 0 8px 24px -18px rgba(17,26,27,.35);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0E1415; --surface: #151D1E; --surface-2: #1B2526;
+      --ink: #E8EEEB; --ink-2: #C3CFCD; --muted: #93A5A4;
+      --rule: #263333; --rule-strong: #354545;
+      --raw: #82A8C2; --corr: #E98B51; --third: #A6C06D; --fourth: #B39DDB;
+      --warn: #E58A76; --warn-bg: #33201C; --ok: #62B28B; --focus: #6FB6CE;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0E1415; --surface: #151D1E; --surface-2: #1B2526;
+    --ink: #E8EEEB; --ink-2: #C3CFCD; --muted: #93A5A4;
+    --rule: #263333; --rule-strong: #354545;
+    --raw: #82A8C2; --corr: #E98B51; --third: #A6C06D; --fourth: #B39DDB;
+    --warn: #E58A76; --warn-bg: #33201C; --ok: #62B28B; --focus: #6FB6CE;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -20px rgba(0,0,0,.9);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+  .wrap { max-width: 1360px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; }
+  a { color: var(--focus); }
+
+  header.masthead { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid var(--rule-strong); padding-bottom: 16px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -.015em; margin: 4px 0 6px; text-wrap: balance; }
+  .lede { color: var(--ink-2); max-width: 66ch; margin: 0; }
+  .cite { font-family: var(--mono); font-size: 11.5px; color: var(--muted); max-width: 36ch; text-align: right; line-height: 1.6; }
+  @media (max-width: 720px) { .cite { text-align: left; } }
+
+  .shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 22px; margin-top: 22px; align-items: start; }
+  @media (max-width: 980px) { .shell { grid-template-columns: minmax(0, 1fr); } }
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; box-shadow: var(--shadow); }
+  .panel > .phead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .phead .t { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .phead .n { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; }
+  .pbody { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+  label.field > span.lab { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  label.check { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--ink-2); }
+  label.check input { margin-top: 3px; }
+  input[type="text"], input[type="number"], select, textarea {
+    font-family: var(--mono); font-size: 13px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--rule-strong); border-radius: 3px; padding: 6px 8px; width: 100%;
+  }
+  textarea { line-height: 1.45; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .chip:focus-visible, .drop:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .hint { font-size: 11.5px; color: var(--muted); }
+
+  button { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--ink); background: var(--surface-2); border: 1px solid var(--rule-strong); border-radius: 3px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--focus); }
+  button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  button.primary:hover { opacity: .88; }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .drop { border: 1px dashed var(--rule-strong); border-radius: 4px; padding: 14px 12px; text-align: center; color: var(--muted); font-size: 12.5px; background: var(--surface-2); cursor: pointer; }
+  .drop.over { border-color: var(--focus); color: var(--ink); }
+  .drop b { color: var(--ink); font-weight: 600; }
+
+  .plotcard { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; box-shadow: var(--shadow); overflow: hidden; }
+  .plottop { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 4px 9px; border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .canvas-holder { position: relative; padding: 8px 10px 4px; }
+  canvas { display: block; width: 100%; height: 460px; touch-action: none; }
+  @media (max-width: 640px) { canvas { height: 320px; } }
+  .readout { position: absolute; top: 14px; right: 18px; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; pointer-events: none; white-space: pre; }
+  .plotfoot { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 8px 14px 12px; border-top: 1px solid var(--rule); font-size: 11.5px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; }
+  .lg .bar { width: 16px; height: 0; border-top-width: 2px; border-top-style: solid; }
+
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border-bottom: 1px solid var(--rule); }
+  .kv > div { background: var(--surface); padding: 10px 14px; }
+  .kv .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .kv .v { font-family: var(--mono); font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .kv .s { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  th { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  th:first-child, td:first-child { text-align: left; }
+  td.bad { color: var(--warn); font-weight: 600; }
+  td.good { color: var(--ok); }
+  .tablewrap { overflow-x: auto; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+  .findings { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+  .flagbox { border-left: 3px solid var(--warn); background: var(--warn-bg); padding: 8px 12px; font-size: 13px; color: var(--ink); border-radius: 0 3px 3px 0; }
+  .okbox { border-left: 3px solid var(--ok); background: var(--surface-2); padding: 8px 12px; font-size: 13px; border-radius: 0 3px 3px 0; }
+  .infobox { border-left: 3px solid var(--focus); background: var(--surface-2); padding: 8px 12px; font-size: 13px; border-radius: 0 3px 3px 0; }
+  .findings b { font-weight: 600; }
+  code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 2px; }
+  .status { font-family: var(--mono); font-size: 11.5px; color: var(--muted); min-height: 17px; }
+  .notes { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .note h3 { font-size: 13px; margin: 0 0 6px; font-weight: 600; }
+  .note p, .note li { font-size: 12.5px; color: var(--ink-2); margin: 0 0 6px; }
+  .note ul { margin: 0; padding-left: 16px; }
+  details summary { cursor: pointer; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--rule-strong); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 20px; }
+
+  /* usage guide (moved from the index page) */
+  .guide { margin-top: 28px; border-top: 1px solid var(--rule-strong); padding-top: 4px; max-width: 880px; }
+  .guide h2 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 28px 0 12px; }
+  .gsteps { counter-reset: g; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .gsteps li { counter-increment: g; display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
+  .gsteps li::before { content: counter(g); font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .gsecondary { display: flex; flex-direction: column; gap: 10px; }
+  .grow { display: grid; grid-template-columns: 148px 1fr; gap: 6px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .grow .k { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .grow .v { font-size: 13.5px; color: var(--ink-2); }
+  @media (max-width: 560px) { .grow { grid-template-columns: 1fr; } }
+  .gcite { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 12px; }
+  .gcite a { color: var(--focus); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Powder XRD · Pawley refinement · COF</div>
+      <h1>COF PXRD 워크벤치</h1>
+      <p class="lede">실험 패턴과 시뮬레이션(또는 CIF 구조)을 올리면 피크를 찾고, 육방정·정방정 셀로 Pawley 정제를 수행해 격자상수·결정 크기·반사 강도를 구하고, 시뮬레이션과의 차이를 자동으로 해석합니다. 브라우저에서 실행되며 데이터는 외부로 전송되지 않습니다.</p>
+    </div>
+    <div class="cite"><a href="index.html">← EMDL 도구 모음</a><br>Pawley, J. Appl. Cryst. 1981, 14, 357<br>Thompson, Cox &amp; Hastings, J. Appl. Cryst. 1987, 20, 79</div>
+  </header>
+
+  <div class="shell">
+    <div class="rail">
+      <section class="panel">
+        <div class="phead"><span class="t">1 · 데이터</span><span class="n" id="datainfo">—</span></div>
+        <div class="pbody">
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="XRD 파일 열기">
+            <b>CSV · TXT · XY</b> 파일을 끌어다 놓거나 클릭<br><span class="hint">(x,y)(x,y)… 쌍 배열, x + 다중 y 자동 인식</span>
+          </div>
+          <input type="file" id="file" accept=".csv,.txt,.dat,.xy,.xye,.tsv,.asc" hidden>
+          <label class="field"><span class="lab">실험 패턴</span><select id="selexp"></select></label>
+          <label class="field"><span class="lab">시뮬레이션 (선택)</span><select id="selsim"></select></label>
+          <div class="row2">
+            <label class="field"><span class="lab">파장</span>
+              <select id="lamsel">
+                <option value="1.5406">Cu Kα₁ 1.5406</option>
+                <option value="1.5418">Cu Kα 1.5418</option>
+                <option value="0.7107">Mo Kα 0.7107</option>
+                <option value="custom">직접 입력</option>
+              </select></label>
+            <label class="field"><span class="lab">λ (Å)</span><input type="number" id="lam" value="1.5406" step="0.0001"></label>
+          </div>
+          <div class="btnrow"><button id="demo">예제 데이터</button></div>
+          <div class="status" id="status"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">2 · 셀 · 구조 모델</span><span class="n" id="cellinfo">—</span></div>
+        <div class="pbody">
+          <div class="row2">
+            <label class="field"><span class="lab">격자</span>
+              <select id="lattice">
+                <option value="hex">육방정 (hcb, kgm)</option>
+                <option value="tet">정방정 (sql)</option>
+              </select></label>
+            <label class="field"><span class="lab">c 포함</span>
+              <select id="usec">
+                <option value="auto">자동</option>
+                <option value="yes">00l 포함</option>
+                <option value="no">hk0만</option>
+              </select></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span class="lab">a 초기값 (Å)</span><input type="number" id="a0" step="0.01" placeholder="자동"></label>
+            <label class="field"><span class="lab">c 초기값 (Å)</span><input type="number" id="c0" step="0.01" placeholder="자동"></label>
+          </div>
+          <div class="btnrow"><button id="guess">실험 피크로 추정</button><button id="fromsim">시뮬레이션 셀 사용</button></div>
+          <label class="field"><span class="lab">CIF 구조 (선택)</span></label>
+          <div class="drop" id="cifdrop" tabindex="0" role="button" aria-label="CIF 파일 열기"><b>CIF</b> 파일로 모델 강도 계산</div>
+          <input type="file" id="ciffile" accept=".cif,.txt" hidden>
+          <div class="row2">
+            <label class="field"><span class="lab">B (Å²)</span><input type="number" id="biso" value="2" step="0.5"></label>
+            <label class="field"><span class="lab">CIF 상태</span><input type="text" id="cifname" value="없음" readonly></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">3 · Pawley 정제</span><span class="n" id="fitinfo">—</span></div>
+        <div class="pbody">
+          <div class="row2">
+            <label class="field"><span class="lab">2θ 시작</span><input type="number" id="tlo" step="0.1" placeholder="자동"></label>
+            <label class="field"><span class="lab">2θ 끝</span><input type="number" id="thi" step="0.1" placeholder="자동"></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span class="lab">zero shift</span>
+              <select id="zmode"><option value="free">정제</option><option value="fixed">고정</option></select></label>
+            <label class="field"><span class="lab">고정값 (°)</span><input type="number" id="zval" value="0" step="0.01"></label>
+          </div>
+          <label class="check"><input type="checkbox" id="lpw" checked><span>LP 가중 프로파일 <span class="hint">— 5° 이하 넓은 피크의 저각 치우침 보정</span></span></label>
+          <label class="check"><input type="checkbox" id="bgexp" checked><span>저각 지수 배경 (빔스톱 꼬리)</span></label>
+          <label class="field"><span class="lab">가중치</span>
+            <select id="wmode"><option value="auto">자동</option><option value="unit">단위 (배경 제거 데이터)</option><option value="poisson">1/I (계수 통계)</option></select></label>
+          <div class="btnrow">
+            <button class="primary" id="run">Pawley 실행</button>
+            <button id="scan">zero 스캔</button>
+          </div>
+          <div class="status" id="fitstatus"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">4 · 내보내기</span></div>
+        <div class="pbody">
+          <div class="btnrow">
+            <button id="dlcsv">패턴 CSV</button>
+            <button id="dlref">반사 표 CSV</button>
+            <button id="dlpng">그래프 PNG</button>
+            <button id="copysum">요약 복사</button>
+          </div>
+          <div class="status" id="exportstatus"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="main">
+      <div class="plotcard">
+        <div class="plottop">
+          <div class="chips" id="viewchips" role="group" aria-label="보기">
+            <button class="chip" data-view="overview" aria-pressed="true">개요</button>
+            <button class="chip" data-view="pawley" aria-pressed="false">Pawley</button>
+            <button class="chip" data-view="scan" aria-pressed="false">zero 스캔</button>
+          </div>
+          <div class="chips" id="rangechips" role="group" aria-label="2θ 구간">
+            <button class="chip" data-lo="" data-hi="" aria-pressed="true">전체</button>
+            <button class="chip" data-lo="2" data-hi="12">2–12°</button>
+            <button class="chip" data-lo="12" data-hi="40">12–40°</button>
+            <button class="chip" id="sqrtchip" data-sqrt="1" aria-pressed="false">√I</button>
+          </div>
+        </div>
+        <div class="canvas-holder">
+          <canvas id="plot"></canvas>
+          <div class="readout" id="readout"></div>
+        </div>
+        <div class="plotfoot">
+          <div class="legend" id="legend"></div>
+          <span>드래그: 확대 · 더블클릭: 전체</span>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="phead"><span class="t">자동 해석</span><span class="n" id="findcount">—</span></div>
+        <div class="findings" id="findings"><div class="infobox">데이터를 올리고 <b>Pawley 실행</b>을 누르면 격자·결정 크기·시뮬레이션 대비 차이를 요약합니다.</div></div>
+      </section>
+
+      <section class="panel">
+        <div class="phead"><span class="t">Pawley 결과</span><span class="n" id="pawleyinfo">—</span></div>
+        <div class="kv" id="kv"></div>
+        <div class="tablewrap">
+          <table id="reftable"><thead><tr><th>hkl</th><th>2θ (°)</th><th>d (Å)</th><th>I / I<sub>ref</sub> (%)</th><th>±σ</th><th>시뮬 (%)</th><th>CIF (%)</th><th>Δ/σ</th></tr></thead><tbody></tbody></table>
+        </div>
+      </section>
+
+      <div class="two">
+        <section class="panel">
+          <div class="phead"><span class="t">실험 피크</span><span class="n" id="pkinfo">—</span></div>
+          <div class="tablewrap">
+            <table id="pktable"><thead><tr><th>2θ (°)</th><th>d (Å)</th><th>FWHM (°)</th><th>L (nm)</th><th>I (%)</th><th>지수</th></tr></thead><tbody></tbody></table>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="phead"><span class="t">시뮬레이션 피크</span><span class="n" id="simpkinfo">—</span></div>
+          <div class="tablewrap">
+            <table id="simtable"><thead><tr><th>2θ (°)</th><th>d (Å)</th><th>hkl</th><th>I (%)</th></tr></thead><tbody></tbody></table>
+          </div>
+        </section>
+      </div>
+
+      <div class="notes">
+        <div class="note">
+          <h3>Pawley 정제가 알려주는 것</h3>
+          <ul>
+            <li>원자 좌표 없이 격자상수, zero shift, 피크 폭(결정 크기), 각 반사의 적분 강도를 정제합니다.</li>
+            <li>추출한 강도를 시뮬레이션·CIF 강도와 비교하면 구조 모델의 어느 부분이 맞지 않는지 알 수 있습니다.</li>
+            <li>Rwp는 “이 셀로 도달 가능한 최선”이며, 원자 모델의 Rwp와의 차이가 모델 오차입니다.</li>
+          </ul>
+        </div>
+        <div class="note">
+          <h3>COF에서 특히 주의할 점</h3>
+          <ul>
+            <li>반사가 모두 저각에 있어 <b>a와 zero shift가 강하게 상관</b>됩니다. zero 스캔으로 범위를 확인하고, 가능하면 Si 내부 표준으로 측정하세요.</li>
+            <li>5° 이하의 넓은 피크는 LP 인자 때문에 저각으로 치우칩니다. LP 가중 프로파일을 켜 두세요.</li>
+            <li>반사 수가 적으면 삼사정(P1) 셀은 유일하게 정해지지 않습니다. 대칭을 제한한 셀을 쓰세요.</li>
+          </ul>
+        </div>
+        <div class="note">
+          <h3>불확도</h3>
+          <ul>
+            <li>±σ는 공분산 행렬에서 구하고, 잔차의 직렬 상관(Durbin–Watson)에 따라 √(2/DW)배 키운 값입니다.</li>
+            <li>배경 제거·smoothing된 데이터는 DW가 작아집니다. 원시 데이터를 쓰면 불확도가 정확해집니다.</li>
+            <li>zero shift 상관에 의한 계통 오차는 ±σ에 포함되지 않습니다.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="guide" aria-label="사용 안내">
+    <h2>쓰는 순서</h2>
+    <ol class="gsteps">
+      <li><span>실험 패턴 파일을 올립니다. <code>(2θ, I)(2θ, I)…</code> 쌍 배열이면 시뮬레이션 열도 자동으로 인식합니다.</span></li>
+      <li><span>격자(육방정·정방정)를 고르고, 필요하면 CIF 구조를 올려 모델 강도를 계산합니다.</span></li>
+      <li><span><b>Pawley 실행</b>으로 격자상수·결정 크기·반사 강도를 구하고, <b>zero 스캔</b>으로 격자상수와 zero shift의 상관을 확인합니다.</span></li>
+      <li><span>자동 해석에서 시뮬레이션 대비 셀·강도 차이를 확인하고, 반사 표와 요약을 내보냅니다.</span></li>
+    </ol>
+
+    <h2>Python으로 쓰기</h2>
+    <div class="gsecondary">
+      <div class="grow"><span class="k">cof_xrd.py</span><span class="v">같은 분석을 스크립트로 수행합니다. <code>python cof_xrd.py data.csv --cif model.cif --scan --plot</code>로 Pawley·시뮬레이션 비교·zero 스캔 결과와 CSV·그림을 얻습니다. <code>python cof_xrd.py --selftest</code>로 자체 검증을 실행할 수 있습니다.</span></div>
+      <div class="grow"><span class="k">읽을 때 주의</span><span class="v">COF는 반사가 모두 저각에 있어 격자상수와 zero shift가 강하게 상관됩니다. zero 스캔 범위를 함께 보고하고, 가능하면 Si 내부 표준으로 측정하세요.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>EMDL · Electrochemical Materials &amp; Devices Lab</span>
+    <span>계산: 구조인자(Cromer–Mann), TCH pseudo-Voigt, Levenberg–Marquardt + NNLS</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+
+  /* ───────── state ───────── */
+  const S = {
+    series: [], exp: null, sim: null, lam: 1.5406,
+    cif: null, peaks: [], simPeaks: [], simCell: null,
+    fit: null, modelFit: null, scan: null,
+    view: "overview", lo: null, hi: null, sqrt: false,
+  };
+
+  /* ───────── linear algebra ───────── */
+  function solve(Ain, bin) {           // Gaussian elimination with partial pivoting (small dense systems)
+    const n = bin.length, A = Ain.map((r) => r.slice()), b = bin.slice();
+    for (let k = 0; k < n; k++) {
+      let p = k, m = Math.abs(A[k][k]);
+      for (let i = k + 1; i < n; i++) if (Math.abs(A[i][k]) > m) { m = Math.abs(A[i][k]); p = i; }
+      if (m < 1e-300) { A[k][k] = 1e-300; }
+      if (p !== k) { [A[k], A[p]] = [A[p], A[k]]; [b[k], b[p]] = [b[p], b[k]]; }
+      for (let i = k + 1; i < n; i++) {
+        const f = A[i][k] / A[k][k]; if (!f) continue;
+        for (let j = k; j < n; j++) A[i][j] -= f * A[k][j];
+        b[i] -= f * b[k];
+      }
+    }
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) { let s = b[i]; for (let j = i + 1; j < n; j++) s -= A[i][j] * x[j]; x[i] = s / A[i][i]; }
+    return x;
+  }
+  function invert(Ain) {
+    const n = Ain.length, A = Ain.map((r, i) => r.concat(Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))));
+    for (let k = 0; k < n; k++) {
+      let p = k, m = Math.abs(A[k][k]);
+      for (let i = k + 1; i < n; i++) if (Math.abs(A[i][k]) > m) { m = Math.abs(A[i][k]); p = i; }
+      if (m < 1e-300) return null;
+      [A[k], A[p]] = [A[p], A[k]];
+      const d = A[k][k]; for (let j = 0; j < 2 * n; j++) A[k][j] /= d;
+      for (let i = 0; i < n; i++) if (i !== k) { const f = A[i][k]; if (f) for (let j = 0; j < 2 * n; j++) A[i][j] -= f * A[k][j]; }
+    }
+    return A.map((r) => r.slice(n));
+  }
+  // NNLS on the normal equations (Lawson–Hanson active set); free[i] = true → unconstrained sign
+  function nnls(G, h, free) {
+    const m = h.length, tol = 1e-12 * (1 + Math.max(...h.map(Math.abs)));
+    const P = new Array(m).fill(false);
+    let x = new Array(m).fill(0);
+    free.forEach((f, i) => { if (f) P[i] = true; });
+    const subSolve = () => {
+      const idx = []; for (let i = 0; i < m; i++) if (P[i]) idx.push(i);
+      const s = new Array(m).fill(0);
+      if (!idx.length) return s;
+      const Gs = idx.map((i) => idx.map((j) => G[i][j] + (i === j ? 1e-12 * (G[i][i] || 1) : 0)));
+      const hs = idx.map((i) => h[i]);
+      const sol = solve(Gs, hs); idx.forEach((i, k) => { s[i] = sol[k]; });
+      return s;
+    };
+    x = subSolve();
+    for (let outer = 0; outer < 3 * m + 10; outer++) {
+      const w = h.map((hi, i) => hi - G[i].reduce((acc, g, j) => acc + g * x[j], 0));
+      let jmax = -1, wmax = tol;
+      for (let i = 0; i < m; i++) if (!P[i] && w[i] > wmax) { wmax = w[i]; jmax = i; }
+      if (jmax < 0) break;
+      P[jmax] = true;
+      let s = subSolve();
+      for (let inner = 0; inner < 3 * m; inner++) {
+        let alpha = Infinity;
+        for (let i = 0; i < m; i++) if (P[i] && !free[i] && s[i] <= 0) alpha = Math.min(alpha, x[i] / (x[i] - s[i] + 1e-300));
+        if (!isFinite(alpha)) break;
+        x = x.map((xi, i) => xi + alpha * (s[i] - xi));
+        for (let i = 0; i < m; i++) if (P[i] && !free[i] && x[i] <= 1e-14) { P[i] = false; x[i] = 0; }
+        s = subSolve();
+      }
+      x = s;
+    }
+    return x.map((v, i) => (free[i] ? v : Math.max(0, v)));
+  }
+
+  /* ───────── crystallography ───────── */
+  const CM = {   // Cromer–Mann coefficients: [a1,b1,a2,b2,a3,b3,a4,b4,c]
+    H: [0.489918, 20.6593, 0.262003, 7.74039, 0.196767, 49.5519, 0.049879, 2.20159, 0.001305],
+    Li: [1.1282, 3.9546, 0.7508, 1.0524, 0.6175, 85.3905, 0.4653, 168.261, 0.0377],
+    B: [2.0545, 23.2185, 1.3326, 1.021, 1.0979, 60.3498, 0.7068, 0.1403, -0.1932],
+    C: [2.31, 20.8439, 1.02, 10.2075, 1.5886, 0.5687, 0.865, 51.6512, 0.2156],
+    N: [12.2126, 0.0057, 3.1322, 9.8933, 2.0125, 28.9975, 1.1663, 0.5826, -11.529],
+    O: [3.0485, 13.2771, 2.2868, 5.7011, 1.5463, 0.3239, 0.867, 32.9089, 0.2508],
+    F: [3.5392, 10.2825, 2.6412, 4.2944, 1.517, 0.2615, 1.0243, 26.1476, 0.2776],
+    Na: [4.7626, 3.285, 3.1736, 8.8422, 1.2674, 0.3136, 1.1128, 129.424, 0.676],
+    Mg: [5.4204, 2.8275, 2.1735, 79.2611, 1.2269, 0.3808, 2.3073, 7.1937, 0.8584],
+    Al: [6.4202, 3.0387, 1.9002, 0.7426, 1.5936, 31.5472, 1.9646, 85.0886, 1.1151],
+    Si: [6.2915, 2.4386, 3.0353, 32.3337, 1.9891, 0.6785, 1.541, 81.6937, 1.1407],
+    P: [6.4345, 1.9067, 4.1791, 27.157, 1.78, 0.526, 1.4908, 68.1645, 1.1149],
+    S: [6.9053, 1.4679, 5.2034, 22.2151, 1.4379, 0.2536, 1.5863, 56.172, 0.8669],
+    Cl: [11.4604, 0.0104, 7.1962, 1.1662, 6.2556, 18.5194, 1.6455, 47.7784, -9.5574],
+    K: [8.2186, 12.7949, 7.4398, 0.7748, 1.0519, 213.187, 0.8659, 41.6841, 1.4228],
+    Ca: [8.6266, 10.4421, 7.3873, 0.6599, 1.5899, 85.7484, 1.0211, 178.437, 1.3751],
+    Ti: [9.7595, 7.8508, 7.3558, 0.5, 1.6991, 35.6338, 1.9021, 116.105, 1.2807],
+    Fe: [11.7695, 4.7611, 7.3573, 0.3072, 3.5222, 15.3535, 2.3045, 76.8805, 1.0369],
+    Co: [12.2841, 4.2791, 7.3409, 0.2784, 4.0034, 13.5359, 2.3488, 71.1692, 1.0118],
+    Ni: [12.8376, 3.8785, 7.292, 0.2565, 4.4438, 12.1763, 2.38, 66.3421, 1.0341],
+    Cu: [13.338, 3.5828, 7.1676, 0.247, 5.6158, 11.3966, 1.6735, 64.8126, 1.191],
+    Zn: [14.0743, 3.2655, 7.0318, 0.2333, 5.1652, 10.3163, 2.41, 58.7097, 1.3041],
+    Br: [17.1789, 2.1723, 5.2358, 16.5796, 5.6377, 0.2609, 3.9851, 41.4328, 2.9557],
+    I: [20.1472, 4.347, 18.9949, 0.3814, 7.5138, 27.766, 2.2735, 66.8776, 4.0712],
+  };
+  const ZNUM = { H: 1, He: 2, Li: 3, Be: 4, B: 5, C: 6, N: 7, O: 8, F: 9, Na: 11, Mg: 12, Al: 13, Si: 14, P: 15, S: 16, Cl: 17, K: 19, Ca: 20, Ti: 22, V: 23, Cr: 24, Mn: 25, Fe: 26, Co: 27, Ni: 28, Cu: 29, Zn: 30, Br: 35, Pd: 46, Ag: 47, I: 53, Pt: 78, Au: 79 };
+  function f0(el, s) {
+    const c = CM[el];
+    if (!c) { const z = ZNUM[el] || 6; return z / 6 * f0("C", s); }
+    const s2 = s * s;
+    return c[0] * Math.exp(-c[1] * s2) + c[2] * Math.exp(-c[3] * s2) + c[4] * Math.exp(-c[5] * s2) + c[6] * Math.exp(-c[7] * s2) + c[8];
+  }
+  function invMetric(a, b, c, al, be, ga) {
+    const ca = Math.cos(al * D2R), cb = Math.cos(be * D2R), cg = Math.cos(ga * D2R);
+    return invert([[a * a, a * b * cg, a * c * cb], [a * b * cg, b * b, b * c * ca], [a * c * cb, b * c * ca, c * c]]);
+  }
+  function lp(tt) { const th = tt * D2R / 2; return (1 + Math.cos(2 * th) ** 2) / (Math.sin(th) ** 2 * Math.cos(th)); }
+  const toTT = (d, lam) => { const s = lam / (2 * d); return s < 1 ? 2 * Math.asin(s) * R2D : NaN; };
+  const toD = (tt, lam) => lam / (2 * Math.sin(tt * D2R / 2));
+
+  // reflection groups for hex/tet lattices; equivalent reflections share a group
+  function invD2(lat, h, k, l, a, c) {
+    const inplane = lat === "hex" ? 4 / 3 * (h * h + h * k + k * k) / (a * a) : (h * h + k * k) / (a * a);
+    return inplane + (c ? l * l / (c * c) : 0);
+  }
+  function canonLabel(lat, members) {
+    // pick h ≥ k ≥ 0, l ≥ 0 representative when possible
+    let best = members[0];
+    for (const m of members) if (m[0] >= m[1] && m[1] >= 0 && m[2] >= 0) { best = m; break; }
+    return best.map((v) => (v < 0 ? "-" + (-v) : String(v))).join("");
+  }
+  function buildGroups(lat, a, c, useC, lam, tmin, tmax) {
+    const dmin = lam / (2 * Math.sin(Math.min(tmax, 170) * D2R / 2));
+    const H = Math.ceil(a / dmin) + 1, L = useC && c ? Math.ceil(c / dmin) : 0;
+    const map = new Map();
+    for (let h = -H; h <= H; h++) for (let k = -H; k <= H; k++) for (let l = 0; l <= L; l++) {
+      if (!h && !k && !l) continue;
+      if (l === 0 && (h < 0 || (h === 0 && k < 0))) continue;   // Friedel mates
+      const q = invD2(lat, h, k, l, a, useC ? c : 0);
+      const d = 1 / Math.sqrt(q);
+      if (d < dmin) continue;
+      const key = Math.round(q * 1e9);
+      if (!map.has(key)) map.set(key, { q, members: [] });
+      map.get(key).members.push([h, k, l]);
+    }
+    const groups = [];
+    for (const g of map.values()) {
+      const d = 1 / Math.sqrt(g.q), tt = toTT(d, lam);
+      if (!(tt >= tmin - 1 && tt <= tmax + 1)) continue;
+      const m0 = g.members[0];
+      const is00l = g.members.every((m) => m[0] === 0 && m[1] === 0);
+      groups.push({ d, tt, members: g.members, mult: g.members.length, label: canonLabel(lat, g.members), rep: m0, is00l, lz: m0[2] });
+    }
+    groups.sort((p, q) => p.tt - q.tt);
+    return groups;
+  }
+
+  /* ───────── parsing ───────── */
+  function splitLine(line) {
+    if (line.indexOf("\t") >= 0) return line.split("\t");
+    if (line.indexOf(",") >= 0) return line.split(",");
+    if (line.indexOf(";") >= 0) return line.split(";");
+    return line.trim().split(/\s+/);
+  }
+  const isNum = (t) => t != null && String(t).trim() !== "" && isFinite(Number(String(t).trim()));
+  function parseXRD(text, fallback) {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "" && !/^\s*[#!]/.test(l));
+    const cells = lines.map(splitLine);
+    const ncol = Math.max(...cells.map((r) => r.length));
+    const numRows = cells.filter((r) => r.filter(isNum).length >= 2);
+    if (numRows.length < 10) throw new Error("숫자 행이 너무 적습니다.");
+    const headerRows = [];
+    for (const r of cells) { if (r.filter(isNum).length >= 2 && r.filter((t) => t.trim() && !isNum(t)).length === 0) break; headerRows.push(r); }
+    const colName = (c) => {
+      for (const hr of headerRows) { const t = (hr[c] || "").trim(); if (t && !isNum(t)) return t; }
+      return null;
+    };
+    const col = (c) => cells.map((r) => (isNum(r[c]) ? Number(r[c]) : NaN));
+    const series = [];
+    const monotonic = (arr) => { const v = arr.filter(isFinite); if (v.length < 10) return false; let inc = 0; for (let i = 1; i < v.length; i++) if (v[i] > v[i - 1]) inc++; return inc / (v.length - 1) > 0.98; };
+    // paired layout: x column followed by y column, repeated (columns may have different lengths)
+    let paired = ncol >= 4 && ncol % 2 === 0;
+    if (paired) for (let c = 0; c < ncol; c += 2) if (!monotonic(col(c))) paired = false;
+    if (paired) {
+      for (let c = 0; c < ncol; c += 2) {
+        const X = col(c), Y = col(c + 1), x = [], y = [];
+        for (let i = 0; i < X.length; i++) if (isFinite(X[i]) && isFinite(Y[i])) { x.push(X[i]); y.push(Y[i]); }
+        if (x.length < 10) continue;
+        const nm = colName(c) || colName(c + 1) || `${fallback} #${c / 2 + 1}`;
+        const alt = colName(c + 1);
+        series.push({ name: nm && !/theta|2θ|angle|deg/i.test(nm) ? nm : (alt || nm), x, y });
+      }
+    } else {
+      const X = col(0);
+      for (let c = 1; c < ncol; c++) {
+        const Y = col(c), x = [], y = [];
+        for (let i = 0; i < X.length; i++) if (isFinite(X[i]) && isFinite(Y[i])) { x.push(X[i]); y.push(Y[i]); }
+        if (x.length < 10) continue;
+        series.push({ name: colName(c) || `${fallback} #${c}`, x, y });
+      }
+    }
+    if (!series.length) throw new Error("(2θ, 강도) 열을 찾지 못했습니다.");
+    series.forEach((s) => {    // sort by x, drop duplicates
+      const o = s.x.map((v, i) => i).sort((p, q) => s.x[p] - s.x[q]);
+      const x = [], y = [];
+      o.forEach((i) => { if (!x.length || s.x[i] - x[x.length - 1] > 1e-9) { x.push(s.x[i]); y.push(s.y[i]); } });
+      s.x = x; s.y = y;
+      s.step = (x[x.length - 1] - x[0]) / (x.length - 1);
+      s.hasNeg = y.some((v) => v < 0);
+      // a simulation is narrow-peaked and has exact zeros between peaks
+      const zeros = y.filter((v) => v === 0).length / y.length;
+      s.isSim = zeros > 0.05 || /sim|calc|cal\b|model/i.test(s.name);
+    });
+    return series;
+  }
+
+  /* ───────── CIF ───────── */
+  function parseCIF(text) {
+    const toks = [];
+    const lines = text.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      let ln = lines[i];
+      if (/^;/.test(ln)) { let txt = ln.slice(1); while (++i < lines.length && !/^;/.test(lines[i])) txt += "\n" + lines[i]; toks.push(txt); continue; }
+      const re = /'([^']*)'(?=\s|$)|"([^"]*)"(?=\s|$)|(#.*$)|(\S+)/g; let m;
+      while ((m = re.exec(ln))) { if (m[3] !== undefined) break; toks.push(m[1] ?? m[2] ?? m[4]); }
+    }
+    const items = {}, loops = [];
+    for (let i = 0; i < toks.length; i++) {
+      const t = toks[i];
+      if (/^loop_$/i.test(t)) {
+        const heads = []; i++;
+        while (i < toks.length && toks[i][0] === "_") heads.push(toks[i++].toLowerCase());
+        const vals = [];
+        while (i < toks.length && toks[i][0] !== "_" && !/^loop_$/i.test(toks[i]) && !/^data_/i.test(toks[i])) vals.push(toks[i++]);
+        i--;
+        const rows = []; for (let r = 0; r + heads.length <= vals.length; r += heads.length) rows.push(vals.slice(r, r + heads.length));
+        loops.push({ heads, rows });
+      } else if (t[0] === "_") { items[t.toLowerCase()] = toks[i + 1]; i++; }
+    }
+    const num = (v) => {   // e.s.d.s in parentheses and fractions such as 1/2
+      const s = String(v).replace(/\(.*\)/, "").trim(), m = s.match(/^([+-]?\d*\.?\d+)\/(\d*\.?\d+)$/);
+      return m ? parseFloat(m[1]) / parseFloat(m[2]) : parseFloat(s);
+    };
+    const cell = ["a", "b", "c", "alpha", "beta", "gamma"].map((k) => num(items["_cell_length_" + k] ?? items["_cell_angle_" + k]));
+    if (cell.some((v) => !isFinite(v))) throw new Error("셀 파라미터를 찾지 못했습니다.");
+    const findLoop = (key) => loops.find((l) => l.heads.includes(key));
+    const symL = findLoop("_symmetry_equiv_pos_as_xyz") || findLoop("_space_group_symop_operation_xyz");
+    const ops = symL ? symL.rows.map((r) => r[symL.heads.indexOf(symL.heads.includes("_symmetry_equiv_pos_as_xyz") ? "_symmetry_equiv_pos_as_xyz" : "_space_group_symop_operation_xyz")]) : ["x,y,z"];
+    const atL = findLoop("_atom_site_fract_x");
+    if (!atL) throw new Error("원자 좌표(_atom_site_fract_x)가 없습니다.");
+    const H = atL.heads, ix = H.indexOf("_atom_site_fract_x"), iy = H.indexOf("_atom_site_fract_y"), iz = H.indexOf("_atom_site_fract_z");
+    const it = H.indexOf("_atom_site_type_symbol"), il = H.indexOf("_atom_site_label"), io = H.indexOf("_atom_site_occupancy");
+    const opFns = ops.map((op) => {
+      const parts = op.toLowerCase().replace(/\s+/g, "").split(",");
+      if (parts.length !== 3 || parts.some((p) => !/^[xyz0-9+\-*/.]+$/.test(p))) throw new Error("대칭 연산자를 읽을 수 없습니다: " + op);
+      return new Function("x", "y", "z", `return [${parts.join(",")}];`);
+    });
+    const sites = [];
+    for (const r of atL.rows) {
+      const raw = (it >= 0 ? r[it] : r[il]) || "C";
+      const el = (raw.match(/^[A-Z][a-z]?/) || ["C"])[0];
+      const occ = io >= 0 && isFinite(num(r[io])) ? num(r[io]) : 1;
+      const p = [num(r[ix]), num(r[iy]), num(r[iz])];
+      const seen = [];
+      for (const fn of opFns) {
+        const q = fn(p[0], p[1], p[2]).map((v) => ((v % 1) + 1) % 1);
+        if (seen.some((s) => s.every((v, k) => { const dd = Math.abs(v - q[k]); return Math.min(dd, 1 - dd) < 1e-3; }))) continue;
+        seen.push(q); sites.push({ el, occ, f: q });
+      }
+    }
+    return { cell, sites, name: items["_chemical_name_common"] || items["_chemical_formula_sum"] || "CIF" };
+  }
+  // model reflections from CIF: |F|²·Lp·DW for every hkl (no merging) up to tmax
+  function cifReflections(cif, lam, tmax, B) {
+    const [a, b, c, al, be, ga] = cif.cell, G = invMetric(a, b, c, al, be, ga);
+    const dmin = lam / (2 * Math.sin(tmax * D2R / 2));
+    const H = Math.ceil(a / dmin), K = Math.ceil(b / dmin), L = Math.ceil(c / dmin);
+    const out = [];
+    const els = [...new Set(cif.sites.map((s) => s.el))];
+    for (let h = -H; h <= H; h++) for (let k = -K; k <= K; k++) for (let l = -L; l <= L; l++) {
+      if (!h && !k && !l) continue;
+      const q = h * h * G[0][0] + k * k * G[1][1] + l * l * G[2][2] + 2 * (h * k * G[0][1] + h * l * G[0][2] + k * l * G[1][2]);
+      const d = 1 / Math.sqrt(q); if (d < dmin) continue;
+      const s = 1 / (2 * d);
+      const fe = {}; els.forEach((e) => { fe[e] = f0(e, s); });
+      let re = 0, im = 0;
+      for (const st of cif.sites) {
+        const ph = 2 * Math.PI * (h * st.f[0] + k * st.f[1] + l * st.f[2]);
+        const f = fe[st.el] * st.occ; re += f * Math.cos(ph); im += f * Math.sin(ph);
+      }
+      const tt = toTT(d, lam);
+      out.push({ d, tt, I: (re * re + im * im) * Math.exp(-2 * B * s * s) * lp(tt), hkl: [h, k, l] });
+    }
+    return out;
+  }
+
+  /* ───────── peak finding ───────── */
+  function smooth(y, w) {
+    if (w <= 1) return y.slice();
+    const h = Math.floor(w / 2), out = new Array(y.length);
+    for (let i = 0; i < y.length; i++) { let s = 0, n = 0; for (let j = Math.max(0, i - h); j <= Math.min(y.length - 1, i + h); j++) { s += y[j]; n++; } out[i] = s / n; }
+    return out;
+  }
+  function findPeaks(x, y, relProm, smoothDeg) {
+    const step = (x[x.length - 1] - x[0]) / (x.length - 1);
+    const ys = smooth(y, Math.max(1, Math.round(smoothDeg / step) | 1));
+    const ymax = Math.max(...ys), ymin = Math.min(...ys), thr = relProm * (ymax - ymin);
+    const out = [];
+    for (let i = 1; i < ys.length - 1; i++) {
+      if (!(ys[i] > ys[i - 1] && ys[i] >= ys[i + 1])) continue;
+      // prominence: min of the lowest points to the nearest higher peaks on each side
+      let l = i, lmin = ys[i]; while (l > 0 && ys[l - 1] <= ys[i]) { l--; lmin = Math.min(lmin, ys[l]); }
+      let r = i, rmin = ys[i]; while (r < ys.length - 1 && ys[r + 1] <= ys[i]) { r++; rmin = Math.min(rmin, ys[r]); }
+      const base = Math.max(lmin, rmin), prom = ys[i] - base;
+      if (prom < thr) continue;
+      // parabolic refinement
+      const a0 = ys[i - 1], a1 = ys[i], a2 = ys[i + 1], den = a0 - 2 * a1 + a2;
+      const xc = x[i] + (den ? 0.5 * (a0 - a2) / den : 0) * step;
+      // FWHM at half prominence
+      const half = base + prom / 2;
+      let li = i; while (li > 0 && ys[li] > half) li--;
+      let ri = i; while (ri < ys.length - 1 && ys[ri] > half) ri++;
+      const xl = li < i ? x[li] + (half - ys[li]) / (ys[li + 1] - ys[li] || 1) * step : x[li];
+      const xr = ri > i ? x[ri - 1] + (ys[ri - 1] - half) / (ys[ri - 1] - ys[ri] || 1) * step : x[ri];
+      // integrated area above the local base
+      let area = 0; for (let j = Math.max(1, li - (i - li)); j <= Math.min(ys.length - 1, ri + (ri - i)); j++) area += Math.max(0, ys[j] - base) * step;
+      out.push({ tt: xc, h: ys[i], prom, fwhm: Math.max(step, xr - xl), area, base });
+    }
+    return out;
+  }
+  function scherrer(tt, fwhm, lam, instr) {
+    const b = Math.sqrt(Math.max(fwhm * fwhm - instr * instr, 1e-8)) * D2R;
+    return 0.9 * lam / (b * Math.cos(tt * D2R / 2)) / 10;   // nm
+  }
+  // index a peak list on a hex/tet lattice; returns {a, c, assign}
+  function indexPeaks(pk, lat, lam) {
+    const low = pk.filter((p) => p.tt < 18).sort((p, q) => p.tt - q.tt);
+    if (!low.length) return null;
+    const strongest = low.reduce((m, p) => (p.area > m.area ? p : m), low[0]);
+    const d1 = toD(Math.min(strongest.tt, low[0].tt), lam);
+    let a = lat === "hex" ? 2 * d1 / Math.sqrt(3) : d1;
+    const stack = pk.filter((p) => p.tt > 18 && p.tt < 32).sort((p, q) => q.area - p.area)[0];
+    const c = stack ? toD(stack.tt, lam) : 0;   // interlayer spacing straight from the π–π peak
+    let assign = [];
+    for (let it = 0; it < 4; it++) {
+      const cand = [];
+      for (let h = 0; h <= 9; h++) for (let k = 0; k <= h; k++) for (let l = 0; l <= (c ? 2 : 0); l++) if (h || k || l) cand.push([h, k, l]);
+      assign = pk.map((p) => {
+        const d = toD(p.tt, lam); let best = null, be = Infinity;
+        for (const m of cand) { const dc = 1 / Math.sqrt(invD2(lat, m[0], m[1], m[2], a, c)); const e = Math.abs(dc - d) / d; if (e < be) { be = e; best = m; } }
+        return { hkl: best, err: be, d };
+      });
+      // least squares for a from the well-indexed hk0 lines: 1/d² = f(hk)/a²
+      let s11 = 0, t1 = 0;
+      assign.forEach((as) => {
+        const [h, k, l] = as.hkl; if (as.err > 0.02 || l !== 0) return;
+        const f = lat === "hex" ? 4 / 3 * (h * h + h * k + k * k) : h * h + k * k;
+        s11 += f * f; t1 += f / (as.d * as.d);
+      });
+      if (s11 > 0) a = 1 / Math.sqrt(t1 / s11);
+    }
+    return { a, c, assign };
+  }
+
+  /* ───────── Pawley engine (Levenberg–Marquardt on profile/cell parameters, NNLS on intensities + background) ───────── */
+  function tch(Hg, Hl) {
+    const H = Math.pow(Hg ** 5 + 2.69269 * Hg ** 4 * Hl + 2.42843 * Hg ** 3 * Hl ** 2 + 4.47163 * Hg ** 2 * Hl ** 3 + 0.07842 * Hg * Hl ** 4 + Hl ** 5, 0.2);
+    const r = Hl / H, eta = Math.min(1, Math.max(0, 1.36603 * r - 0.47719 * r * r + 0.11116 * r * r * r));
+    return [H, eta];
+  }
+  function makeProblem(opt) {
+    // opt: {x, y, w, lat, a0, c0, useC, lam, zeroFixed, zeroVal, lpw, bgexp, fixedI (optional array aligned with groups)}
+    const { x, lam, lat, useC } = opt;
+    const n = x.length, x0 = x[0], xr = x[n - 1] - x[0];
+    const groups0 = buildGroups(lat, opt.a0, opt.c0, useC, lam, x[0], x[n - 1]);
+    const has00l = useC && groups0.some((g) => g.lz !== 0);
+    // nonlinear parameter vector θ
+    const P = [];
+    const add = (name, v, lo, hi, fixed) => P.push({ name, v, lo, hi, fixed: !!fixed });
+    add("a", opt.a0, opt.a0 * 0.85, opt.a0 * 1.15);
+    add("c", opt.c0 || 3.5, (opt.c0 || 3.5) * 0.85, (opt.c0 || 3.5) * 1.15, !has00l);
+    add("zero", opt.zeroFixed ? opt.zeroVal : 0, -0.5, 0.5, opt.zeroFixed);
+    add("G0", 0.05, 0.003, 2);
+    add("X", opt.X0 || 0.4, 0.003, 6);
+    add("Xc", 2, 0.01, 15, !has00l);
+    add("asym", 0, -0.6, 0.6);
+    add("bgt", 0.5, 0.05, 6, !opt.bgexp);
+    const idx = Object.fromEntries(P.map((p, i) => [p.name, i]));
+    const dx = new Array(n); for (let i = 0; i < n; i++) dx[i] = i === 0 ? x[1] - x[0] : i === n - 1 ? x[n - 1] - x[n - 2] : (x[i + 1] - x[i - 1]) / 2;
+    const w = opt.w;
+    const lpx = opt.lpw ? x.map(lp) : null;
+
+    function columns(th) {
+      const a = th[idx.a], c = th[idx.c], zero = th[idx.zero], G0 = th[idx.G0], X = th[idx.X], Xc = th[idx.Xc], asym = th[idx.asym];
+      const cols = [], meta = [];
+      for (const g of groups0) {
+        const q = invD2(lat, g.rep[0], g.rep[1], g.rep[2], a, has00l ? c : 0);
+        const d = 1 / Math.sqrt(q), t = toTT(d, lam) + zero;
+        if (!isFinite(t)) { cols.push(null); meta.push(null); continue; }
+        const thr = t * D2R / 2;
+        const cphi = has00l ? Math.min(1, Math.abs(g.rep[2]) * d / c) : 0;
+        const Xe = Math.sqrt(X * X * (1 - cphi * cphi) + Xc * Xc * cphi * cphi);
+        const Hl = Xe / Math.cos(thr), Hg = G0;
+        const [H, eta] = tch(Hg, Hl);
+        const lo = t - 14 * H, hi = t + 14 * H;
+        let i0 = 0, i1 = n - 1;
+        { let L = 0, R = n - 1; while (L < R) { const M = (L + R) >> 1; if (x[M] < lo) L = M + 1; else R = M; } i0 = L; }
+        { let L = 0, R = n - 1; while (L < R) { const M = (L + R + 1) >> 1; if (x[M] > hi) R = M - 1; else L = M; } i1 = L; }
+        if (i1 < i0) { cols.push(null); meta.push({ t, d, H }); continue; }
+        const vals = new Float64Array(i1 - i0 + 1);
+        let area = 0;
+        const lpt = opt.lpw ? lp(t) : 1;
+        for (let i = i0; i <= i1; i++) {
+          const u = x[i] - t, Hs = u < 0 ? H * (1 - asym) : H * (1 + asym), z = 4 * u * u / (Hs * Hs);
+          let v = eta / (1 + z) + (1 - eta) * Math.exp(-Math.LN2 * z);
+          if (lpx) v *= lpx[i] / lpt;
+          vals[i - i0] = v; area += v * dx[i];
+        }
+        // normalize to unit area over the full profile (window covers ≥ 99% of it)
+        const fullArea = (eta * Math.PI / 2 + (1 - eta) * Math.sqrt(Math.PI / (4 * Math.LN2))) * H;
+        const norm = opt.lpw ? area : fullArea;   // LP weighting changes the shape, so normalize numerically
+        for (let k = 0; k < vals.length; k++) vals[k] /= (norm || 1);
+        cols.push({ i0, vals }); meta.push({ t, d, H, eta });
+      }
+      // background columns
+      const bgc = [];
+      if (opt.bgexp) bgc.push({ free: false, v: x.map((xi) => Math.exp(-(xi - x0) / th[idx.bgt])) });
+      const u = x.map((xi) => 2 * (xi - x0) / xr - 1);
+      bgc.push({ free: true, v: u.map(() => 1) }, { free: true, v: u.slice() }, { free: true, v: u.map((q) => 2 * q * q - 1) }, { free: true, v: u.map((q) => 4 * q * q * q - 3 * q) });
+      return { cols, meta, bgc };
+    }
+    function linear(th) {
+      const { cols, meta, bgc } = columns(th);
+      // design columns: peaks (≥0) or one fixed-ratio peak column, then background
+      const design = [];
+      if (opt.fixedI) {
+        const v = new Float64Array(n);
+        cols.forEach((cl, j) => { if (cl && opt.fixedI[j] > 0) for (let k = 0; k < cl.vals.length; k++) v[cl.i0 + k] += opt.fixedI[j] * cl.vals[k]; });
+        design.push({ dense: v, free: false });
+      } else cols.forEach((cl) => design.push(cl ? { sparse: cl, free: false } : null));
+      bgc.forEach((b) => design.push({ dense: b.v, free: b.free }));
+      const act = design.map((d, i) => (d ? i : -1)).filter((i) => i >= 0);
+      const m = act.length;
+      const colVal = (d, i) => (d.dense ? d.dense[i] : (i >= d.sparse.i0 && i < d.sparse.i0 + d.sparse.vals.length ? d.sparse.vals[i - d.sparse.i0] : 0));
+      const range = (d) => (d.dense ? [0, n - 1] : [d.sparse.i0, d.sparse.i0 + d.sparse.vals.length - 1]);
+      const G = Array.from({ length: m }, () => new Array(m).fill(0)), h = new Array(m).fill(0);
+      for (let p = 0; p < m; p++) {
+        const dp = design[act[p]], [pa, pb] = range(dp);
+        for (let i = pa; i <= pb; i++) h[p] += w[i] * colVal(dp, i) * opt.y[i];
+        for (let q = p; q < m; q++) {
+          const dq = design[act[q]], [qa, qb] = range(dq);
+          const lo = Math.max(pa, qa), hi = Math.min(pb, qb);
+          let s = 0; for (let i = lo; i <= hi; i++) s += w[i] * colVal(dp, i) * colVal(dq, i);
+          G[p][q] = G[q][p] = s;
+        }
+      }
+      const beta = nnls(G, h, act.map((i) => design[i].free));
+      const yc = new Float64Array(n);
+      act.forEach((di, p) => { const d = design[di], [a0, a1] = range(d); for (let i = a0; i <= a1; i++) yc[i] += beta[p] * colVal(d, i); });
+      return { yc, beta, act, design, meta, colVal, range };
+    }
+    function resid(th) {
+      const L = linear(th); const r = new Float64Array(n);
+      for (let i = 0; i < n; i++) r[i] = Math.sqrt(w[i]) * (opt.y[i] - L.yc[i]);
+      return { r, L };
+    }
+    // model at θ with the linear coefficients of a previous solution held fixed (for the covariance)
+    function evalFixed(th, L) {
+      const L2 = linear(th);   // same design layout; replace its β by the reference β
+      const yc = new Float64Array(n);
+      L.act.forEach((di, p) => { const d = L2.design[di]; if (!d) return; const [a0, a1] = L2.range(d); for (let i = a0; i <= a1; i++) yc[i] += L.beta[p] * L2.colVal(d, i); });
+      return yc;
+    }
+    return { P, idx, groups: groups0, has00l, resid, linear, evalFixed, n };
+  }
+  const ssq = (r) => { let s = 0; for (let i = 0; i < r.length; i++) s += r[i] * r[i]; return s; };
+
+  async function runLM(prob, maxIt, onIter) {
+    const P = prob.P, free = P.map((p, i) => (p.fixed ? -1 : i)).filter((i) => i >= 0);
+    let th = P.map((p) => p.v);
+    let cur = prob.resid(th), f = ssq(cur.r), lam = 1e-2;
+    for (let it = 0; it < maxIt; it++) {
+      // numeric Jacobian (forward differences)
+      const J = free.map((i) => {
+        const hstep = Math.max(1e-6, 1e-4 * Math.max(Math.abs(th[i]), P[i].name === "zero" || P[i].name === "asym" ? 0.1 : 0.01));
+        const t2 = th.slice(); t2[i] = Math.min(P[i].hi, t2[i] + hstep);
+        const hh = t2[i] - th[i] || -hstep; if (hh < 0) t2[i] = th[i] + hh;
+        const r2 = prob.resid(t2).r; const col = new Float64Array(r2.length);
+        for (let k = 0; k < r2.length; k++) col[k] = (r2[k] - cur.r[k]) / hh;
+        return col;
+      });
+      const m = free.length;
+      const A = Array.from({ length: m }, () => new Array(m).fill(0)), g = new Array(m).fill(0);
+      for (let p = 0; p < m; p++) { for (let k = 0; k < cur.r.length; k++) g[p] -= J[p][k] * cur.r[k]; for (let q = p; q < m; q++) { let s = 0; for (let k = 0; k < cur.r.length; k++) s += J[p][k] * J[q][k]; A[p][q] = A[q][p] = s; } }
+      let improved = false;
+      for (let tries = 0; tries < 8; tries++) {
+        const Ad = A.map((row, p) => row.map((v, q) => (p === q ? v * (1 + lam) + 1e-12 : v)));
+        const step = solve(Ad, g);
+        const t2 = th.slice(); free.forEach((i, p) => { t2[i] = Math.min(P[i].hi, Math.max(P[i].lo, th[i] + step[p])); });
+        const r2 = prob.resid(t2), f2 = ssq(r2.r);
+        if (f2 < f) { const rel = (f - f2) / f; th = t2; cur = r2; f = f2; lam = Math.max(lam / 4, 1e-9); improved = true; if (onIter) await onIter(it, f); if (rel < 1e-8) it = maxIt; break; }
+        lam *= 6;
+      }
+      if (!improved) break;
+    }
+    return { th, cur, f };
+  }
+
+  function finalize(prob, res, opt) {
+    const { th, cur } = res, n = prob.n, L = cur.L, P = prob.P;
+    const y = opt.y, w = opt.w;
+    let sw = 0; for (let i = 0; i < n; i++) sw += w[i] * y[i] * y[i];
+    const Rwp = Math.sqrt(res.f / sw);
+    let sa = 0, sb = 0; for (let i = 0; i < n; i++) { sa += Math.abs(y[i] - L.yc[i]); sb += Math.abs(y[i]); }
+    // Durbin–Watson on weighted residuals
+    let num = 0; for (let i = 1; i < n; i++) num += (cur.r[i] - cur.r[i - 1]) ** 2;
+    const DW = num / res.f;
+    // covariance: Jacobian over free nonlinear params + active linear coefficients
+    const free = P.map((p, i) => (p.fixed || th[i] <= p.lo + 1e-9 || th[i] >= p.hi - 1e-9 ? -1 : i)).filter((i) => i >= 0);
+    const cols = [];
+    free.forEach((i) => {
+      const hstep = Math.max(1e-6, 1e-4 * Math.max(Math.abs(th[i]), 0.05));
+      const t2 = th.slice(); t2[i] += hstep;
+      const yc2 = prob.evalFixed(t2, L);   // ∂model/∂θ with β held fixed
+      const c = new Float64Array(n); for (let k = 0; k < n; k++) c[k] = Math.sqrt(w[k]) * (yc2[k] - L.yc[k]) / hstep;
+      cols.push({ kind: "th", i, v: c });
+    });
+    L.act.forEach((di, p) => {
+      if (!L.design[di].free && L.beta[p] <= 0) return;
+      const d = L.design[di], c = new Float64Array(n), [a0, a1] = L.range(d);
+      for (let k = a0; k <= a1; k++) c[k] = Math.sqrt(w[k]) * L.colVal(d, k);
+      cols.push({ kind: "beta", p, di, v: c });
+    });
+    const m = cols.length, JTJ = Array.from({ length: m }, () => new Array(m).fill(0));
+    for (let p = 0; p < m; p++) for (let q = p; q < m; q++) { let s = 0; const a = cols[p].v, b = cols[q].v; for (let k = 0; k < n; k++) s += a[k] * b[k]; JTJ[p][q] = JTJ[q][p] = s; }
+    const s2 = res.f / Math.max(1, n - m);
+    const cov = invert(JTJ);
+    const infl = DW < 2 ? Math.sqrt(2 / Math.max(DW, 1e-3)) : 1;
+    const esdTh = {}, esdBeta = {};
+    if (cov) cols.forEach((c, p) => { const e = Math.sqrt(Math.abs(cov[p][p] * s2)) * infl; if (c.kind === "th") esdTh[P[c.i].name] = e; else esdBeta[c.di] = e; });
+    const val = (nm) => th[prob.idx[nm]];
+    // reflection table
+    const refl = prob.groups.map((g, j) => {
+      const meta = L.meta[j]; if (!meta) return null;
+      const p = L.act.indexOf(j);
+      const I = opt.fixedI ? (opt.fixedI[j] || 0) * (L.beta[0] || 0) : (p >= 0 ? L.beta[p] : 0);
+      return { label: g.label, tt: meta.t, d: meta.d, I, esd: opt.fixedI ? NaN : (esdBeta[j] ?? NaN), mult: g.mult, is00l: g.is00l, lz: g.lz, H: meta.H };
+    }).filter(Boolean);
+    const bgOnly = new Float64Array(n);
+    L.act.forEach((di, p) => { const d = L.design[di]; if (d.dense && di >= (opt.fixedI ? 1 : prob.groups.length)) for (let k = 0; k < n; k++) bgOnly[k] += L.beta[p] * d.dense[k]; });
+    const lam = opt.lam;
+    const X = val("X"), G0 = val("G0");
+    // crystallite sizes from the total FWHM (instrumental 0.05° removed in quadrature), Scherrer K = 0.9
+    const r0 = refl.find((r) => !r.is00l) || refl[0], rc = refl.find((r) => r.is00l);
+    const sizeOf = (r) => (r ? 0.9 * lam / (Math.sqrt(Math.max(r.H * r.H - 0.0025, 1e-6)) * D2R * Math.cos(r.tt * D2R / 2)) / 10 : null);
+    const H100 = r0 ? r0.H : NaN;
+    return {
+      a: val("a"), c: prob.has00l ? val("c") : null, zero: val("zero"), G0, X, Xc: prob.has00l ? val("Xc") : null, asym: val("asym"),
+      esd: esdTh, Rwp, Rp: sa / sb, DW, infl, n, nPar: m, yc: L.yc, bg: bgOnly, x: opt.x, y, refl,
+      Lab: sizeOf(r0), Lc: prob.has00l ? sizeOf(rc) : null, has00l: prob.has00l, H100,
+    };
+  }
+
+  /* ───────── orchestration ───────── */
+  function currentData() {
+    const s = S.exp; if (!s) return null;
+    const lo = parseFloat($("tlo").value), hi = parseFloat($("thi").value);
+    const tlo = isFinite(lo) ? lo : Math.max(s.x[0], defaultLo(s)), thi = isFinite(hi) ? hi : Math.min(s.x[s.x.length - 1], defaultHi(s));
+    let x = [], y = [];
+    for (let i = 0; i < s.x.length; i++) if (s.x[i] >= tlo && s.x[i] <= thi) { x.push(s.x[i]); y.push(s.y[i]); }
+    // bin to ≤ 1200 points for speed (peaks in COFs are ≥ 0.2° wide)
+    const target = 1200;
+    if (x.length > target) {
+      const f = Math.ceil(x.length / target), xb = [], yb = [];
+      for (let i = 0; i + f <= x.length; i += f) { let sx = 0, sy = 0; for (let k = 0; k < f; k++) { sx += x[i + k]; sy += y[i + k]; } xb.push(sx / f); yb.push(sy / f); }
+      x = xb; y = yb;
+    }
+    const mode = $("wmode").value;
+    const unit = mode === "unit" || (mode === "auto" && s.hasNeg);
+    const w = y.map((v) => (unit ? 1 : 1 / Math.max(Math.abs(v), 1)));
+    return { x, y, w, unitW: unit, tlo, thi };
+  }
+  function defaultLo(s) {
+    // start just after the low-angle minimum before the first strong peak
+    const pk = S.peaks[0];
+    if (!pk) return s.x[0];
+    let i = 0; while (i < s.x.length && s.x[i] < pk.tt - 2.5 * pk.fwhm) i++;
+    return Math.max(s.x[0], s.x[Math.max(0, i)]);
+  }
+  function defaultHi(s) {
+    // Bragg region: up to the last well-defined in-plane peak + margin, or 12°
+    const inplane = S.peaks.filter((p) => p.tt < 18 && p.fwhm < 1.5);   // diffuse humps are not Bragg peaks
+    const last = inplane.length ? inplane[inplane.length - 1].tt : 10;
+    return Math.min(s.x[s.x.length - 1], Math.max(12, last + 3));
+  }
+  function cellInputs() {
+    const lat = $("lattice").value;
+    let a = parseFloat($("a0").value), c = parseFloat($("c0").value);
+    if (!isFinite(a)) { const g = guessCell(); a = g.a; if (!isFinite(c)) c = g.c; }
+    const uc = $("usec").value;
+    return { lat, a, c: isFinite(c) ? c : 0, uc };
+  }
+  function guessCell() {
+    const lat = $("lattice").value;
+    const r = indexPeaks(S.peaks, lat, S.lam);
+    return r || { a: 30, c: 3.5 };
+  }
+
+  async function runPawley(extra = {}) {
+    const dat = currentData(); if (!dat) return null;
+    const { lat, a, c, uc } = cellInputs();
+    const useC = uc === "yes" || (uc === "auto" && c > 0 && toTT(c, S.lam) <= dat.thi);
+    const zeroFixed = extra.zeroFixed ?? ($("zmode").value === "fixed");
+    const zeroVal = extra.zeroVal ?? (parseFloat($("zval").value) || 0);
+    const first = S.peaks[0];
+    const opt = {
+      x: dat.x, y: dat.y, w: dat.w, lat, a0: a, c0: c, useC, lam: S.lam, zeroFixed, zeroVal,
+      lpw: $("lpw").checked && dat.tlo < 8, bgexp: $("bgexp").checked && dat.tlo < 6,
+      X0: first ? Math.max(0.05, first.fwhm * 0.7) : 0.4, fixedI: extra.fixedI || null,
+    };
+    const prob = makeProblem(opt);
+    if (extra.fixedI && extra.fixedI.length !== prob.groups.length) return null;
+    const res = await runLM(prob, extra.maxIt || 60, async (it, f) => {
+      if (!extra.quiet && it % 3 === 0) { $("fitstatus").textContent = `반복 ${it + 1} · Σr² ${f.toExponential(3)}`; await new Promise((r) => setTimeout(r, 0)); }
+    });
+    const out = finalize(prob, res, opt);
+    out.unitW = dat.unitW; out.lat = lat; out.tlo = dat.tlo; out.thi = dat.thi; out.groups = prob.groups;
+    return out;
+  }
+
+  // model intensities (%, relative to first in-plane reflection) mapped onto the Pawley reflections
+  function modelIntensities(fit) {
+    const res = { sim: null, cif: null };
+    if (!fit) return res;
+    const ref = fit.refl.find((r) => !r.is00l) || fit.refl[0];
+    const tol = 0.012;
+    const mapList = (list, dRef) => {   // list: [{d, I}] in the model's own cell; scale d so its first strong low-angle line matches dRef
+      if (!list.length) return null;
+      const low = list.filter((r) => r.d > dRef * 0.7).sort((p, q) => q.d - p.d);
+      const strong = low.slice(0, 4).reduce((m, r) => (r.I > m.I ? r : m), low[0] || list[0]);
+      const sc = ref.d / strong.d;
+      const out = fit.refl.map((r) => {
+        let I = 0; for (const m of list) if (Math.abs(m.d * sc - r.d) / r.d < tol) I += m.I; return I;
+      });
+      const base = out[fit.refl.indexOf(ref)] || 1;
+      return { pct: out.map((v) => 100 * v / base), scale: sc };
+    };
+    if (S.simPeaks.length) res.sim = mapList(S.simPeaks.map((p) => ({ d: toD(p.tt, S.lam), I: p.area })), ref.d);
+    if (S.cif) {
+      const tmax = Math.min(60, toTT(Math.min(...fit.refl.map((r) => r.d)) * 0.8, S.lam) || 40);
+      const cr = cifReflections(S.cif, S.lam, tmax, parseFloat($("biso").value) || 0);
+      res.cif = mapList(cr, ref.d);
+      res.cifRefl = cr;
+    }
+    return res;
+  }
+
+  async function onRun() {
+    if (!S.exp) return;
+    $("run").disabled = true; $("scan").disabled = true;
+    try {
+      $("fitstatus").textContent = "정제 중…";
+      const t0 = performance.now();
+      S.fit = await runPawley();
+      S.models = modelIntensities(S.fit);
+      // fixed-intensity fits (model-based Rwp)
+      S.modelFit = {};
+      for (const key of ["sim", "cif"]) {
+        const md = S.models[key];
+        if (!md) continue;
+        const fixedI = S.fit.groups.map((g) => { const r = S.fit.refl.find((q) => Math.abs(q.d - g.d) < 1e-6 || q.label === g.label); const k = r ? S.fit.refl.indexOf(r) : -1; return k >= 0 ? md.pct[k] : 0; });
+        const mf = await runPawley({ fixedI, quiet: true, maxIt: 40 });
+        if (mf) S.modelFit[key] = mf;
+      }
+      $("fitstatus").textContent = `완료 · ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+      S.view = "pawley"; setView("pawley");
+      renderFit(); renderFindings(); draw();
+    } catch (err) {
+      console.error(err); $("fitstatus").textContent = "정제 실패: " + err.message;
+    } finally { $("run").disabled = false; $("scan").disabled = false; }
+  }
+  async function onScan() {
+    if (!S.exp) return;
+    $("run").disabled = true; $("scan").disabled = true;
+    const zs = [-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15];
+    S.scan = [];
+    try {
+      for (const z of zs) {
+        $("fitstatus").textContent = `zero ${z >= 0 ? "+" : ""}${z.toFixed(2)}° 정제 중…`;
+        await new Promise((r) => setTimeout(r, 0));
+        const f = await runPawley({ zeroFixed: true, zeroVal: z, quiet: true, maxIt: 40 });
+        if (f) S.scan.push({ z, a: f.a, c: f.c, Rwp: f.Rwp });
+      }
+      $("fitstatus").textContent = "zero 스캔 완료";
+      setView("scan"); renderFindings(); draw();
+    } catch (err) { $("fitstatus").textContent = "스캔 실패: " + err.message; }
+    finally { $("run").disabled = false; $("scan").disabled = false; }
+  }
+
+  /* ───────── ingest / analysis ───────── */
+  function ingest(text, name) {
+    const ser = parseXRD(text, name);
+    S.series = ser;
+    const expIdx = ser.findIndex((s) => !s.isSim);
+    const simIdx = ser.findIndex((s, i) => s.isSim && i !== expIdx);
+    fillSelect($("selexp"), ser, expIdx >= 0 ? expIdx : 0, false);
+    fillSelect($("selsim"), ser, simIdx, true);
+    $("datainfo").textContent = `${ser.length}개 계열`;
+    S.fit = null; S.modelFit = null; S.scan = null; S.models = null;
+    $("a0").value = ""; $("c0").value = "";
+    choose();
+  }
+  function fillSelect(sel, ser, idx, allowNone) {
+    sel.innerHTML = (allowNone ? `<option value="-1">없음</option>` : "") + ser.map((s, i) => `<option value="${i}">${esc(s.name)} · ${s.x.length}점 · ${s.x[0].toFixed(1)}–${s.x[s.x.length - 1].toFixed(1)}°</option>`).join("");
+    sel.value = String(idx);
+  }
+  function choose() {
+    const ei = parseInt($("selexp").value, 10), si = parseInt($("selsim").value, 10);
+    S.exp = S.series[ei] || null; S.sim = si >= 0 ? S.series[si] : null;
+    if (!S.exp) return;
+    S.peaks = findPeaks(S.exp.x, S.exp.y, 0.012, 0.08).filter((p) => p.tt > S.exp.x[0] + 0.3);
+    S.simPeaks = S.sim ? findPeaks(S.sim.x, S.sim.y, 0.001, 0).filter((p) => p.tt > S.sim.x[0] + 0.2) : [];
+    const lat = $("lattice").value;
+    S.simCell = S.simPeaks.length ? indexPeaks(S.simPeaks, lat, S.lam) : null;
+    const g = guessCell();
+    $("cellinfo").textContent = `a≈${g.a.toFixed(1)}${g.c ? ` c≈${g.c.toFixed(2)}` : ""} Å`;
+    S.fit = null; S.modelFit = null; S.scan = null; S.models = null;
+    renderPeaks(); renderSimPeaks(); renderFit(); renderFindings(); setView("overview"); draw();
+  }
+
+  /* ───────── rendering: tables ───────── */
+  const fx = (v, d = 2) => (isFinite(v) ? v.toFixed(d) : "—");
+  function renderPeaks() {
+    const tb = $("pktable").querySelector("tbody");
+    if (!S.exp) { tb.innerHTML = ""; return; }
+    const lat = $("lattice").value, g = guessCell();
+    const imax = Math.max(...S.peaks.map((p) => p.area), 1);
+    const instr = 0.05;
+    tb.innerHTML = S.peaks.map((p) => {
+      const d = toD(p.tt, S.lam);
+      let idx = "";
+      if (g.a) {
+        let best = "", be = 0.03;
+        for (let h = 0; h <= 8; h++) for (let k = 0; k <= h; k++) for (let l = 0; l <= (g.c ? 1 : 0); l++) {
+          if (!h && !k && !l) continue;
+          const dc = 1 / Math.sqrt(invD2(lat, h, k, l, g.a, g.c)); const e = Math.abs(dc - d) / d;
+          if (e < be) { be = e; best = `${h}${k}${l}`; }
+        }
+        idx = best || (p.tt > 18 && p.tt < 32 ? "π–π" : "");
+      }
+      return `<tr><td>${fx(p.tt)}</td><td>${fx(d)}</td><td>${fx(p.fwhm)}</td><td>${fx(scherrer(p.tt, p.fwhm, S.lam, instr), 1)}</td><td>${fx(100 * p.area / imax, 1)}</td><td>${idx}</td></tr>`;
+    }).join("");
+    $("pkinfo").textContent = `${S.peaks.length}개 · L은 Scherrer (K 0.9, 기기 0.05°)`;
+  }
+  function renderSimPeaks() {
+    const tb = $("simtable").querySelector("tbody");
+    if (!S.sim || !S.simPeaks.length) { tb.innerHTML = `<tr><td colspan="4" style="text-align:left;color:var(--muted)">시뮬레이션 없음</td></tr>`; $("simpkinfo").textContent = "—"; return; }
+    const imax = Math.max(...S.simPeaks.map((p) => p.area));
+    const as = S.simCell ? S.simCell.assign : [];
+    tb.innerHTML = S.simPeaks.filter((p) => p.area / imax > 0.002).slice(0, 30).map((p) => {
+      const k = S.simPeaks.indexOf(p), a = as[k];
+      const lab = a && a.err < 0.01 ? a.hkl.join("") : (a ? `(${a.hkl.join("")}?)` : "");
+      return `<tr><td>${fx(p.tt)}</td><td>${fx(toD(p.tt, S.lam))}</td><td>${lab}</td><td>${fx(100 * p.area / imax, 2)}</td></tr>`;
+    }).join("");
+    $("simpkinfo").textContent = S.simCell ? `셀 a ${S.simCell.a.toFixed(2)} Å${S.simCell.c ? ` · c ${S.simCell.c.toFixed(3)} Å` : ""}` : "—";
+  }
+  function renderFit() {
+    const f = S.fit, kv = $("kv"), tb = $("reftable").querySelector("tbody");
+    if (!f) { kv.innerHTML = ""; tb.innerHTML = ""; $("pawleyinfo").textContent = "—"; $("fitinfo").textContent = "—"; return; }
+    const e = (nm, d) => (isFinite(f.esd[nm]) ? ` ± ${f.esd[nm].toFixed(d)}` : "");
+    const cells = [
+      ["a", `${f.a.toFixed(3)} Å`, e("a", 3)],
+      ["c", f.c ? `${f.c.toFixed(3)} Å` : "—", f.c ? e("c", 3) : "00l 제외"],
+      ["zero shift", `${f.zero >= 0 ? "+" : ""}${f.zero.toFixed(3)}°`, $("zmode").value === "fixed" ? "고정" : e("zero", 3)],
+      ["Rwp · Rp", `${(100 * f.Rwp).toFixed(2)} %`, `Rp ${(100 * f.Rp).toFixed(2)} % · ${f.unitW ? "단위 가중" : "1/I 가중"}`],
+      ["면내 결정 크기", `${f.Lab.toFixed(1)} nm`, `FWHM ${f.H100.toFixed(3)}° (첫 반사)`],
+      ["적층 결정 크기", f.Lc ? `${f.Lc.toFixed(1)} nm` : "—", f.Lc ? `${(f.Lc * 10 / (f.c || 3.5)).toFixed(0)}층` : "00l 제외"],
+      ["Durbin–Watson", f.DW.toFixed(2), `σ × ${f.infl.toFixed(1)}`],
+      ["점 · 파라미터", `${f.n} · ${f.nPar}`, `${fx(f.tlo, 1)}–${fx(f.thi, 1)}°`],
+    ];
+    if (S.modelFit?.sim) cells.push(["시뮬 강도 고정 Rwp", `${(100 * S.modelFit.sim.Rwp).toFixed(2)} %`, `a ${S.modelFit.sim.a.toFixed(2)} Å`]);
+    if (S.modelFit?.cif) cells.push(["CIF 강도 고정 Rwp", `${(100 * S.modelFit.cif.Rwp).toFixed(2)} %`, `a ${S.modelFit.cif.a.toFixed(2)} Å`]);
+    kv.innerHTML = cells.map(([k, v, s]) => `<div><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
+    const ref = f.refl.find((r) => !r.is00l) || f.refl[0], I0 = ref.I || 1;
+    const sim = S.models?.sim, cif = S.models?.cif;
+    tb.innerHTML = f.refl.map((r, k) => {
+      const pct = 100 * r.I / I0, sg = 100 * r.esd / I0;
+      const cmp = cif ? cif.pct[k] : sim ? sim.pct[k] : NaN;
+      const dz = isFinite(cmp) && isFinite(sg) && sg > 0 && r !== ref ? (pct - cmp) / Math.max(sg, 0.02 * Math.max(pct, cmp)) : NaN;
+      const cls = isFinite(dz) && Math.abs(dz) > 3 ? "bad" : isFinite(dz) ? "good" : "";
+      return `<tr><td>${r.label}</td><td>${fx(r.tt, 3)}</td><td>${fx(r.d, 2)}</td><td>${fx(pct, 2)}</td><td>${fx(sg, 2)}</td><td>${sim ? fx(sim.pct[k], 2) : "—"}</td><td>${cif ? fx(cif.pct[k], 2) : "—"}</td><td class="${cls}">${fx(dz, 1)}</td></tr>`;
+    }).join("");
+    $("pawleyinfo").textContent = `${f.lat === "hex" ? "육방정" : "정방정"} · ${f.refl.length}개 반사군`;
+    $("fitinfo").textContent = `Rwp ${(100 * f.Rwp).toFixed(2)} %`;
+  }
+
+  /* ───────── automatic interpretation ───────── */
+  function renderFindings() {
+    const box = $("findings"), out = [];
+    const push = (cls, html) => out.push(`<div class="${cls}">${html}</div>`);
+    if (!S.exp) { box.innerHTML = ""; return; }
+    const s = S.exp, f = S.fit;
+    if (s.hasNeg) push("infobox", "실험 데이터에 음수 값이 있습니다. <b>배경이 이미 제거된 데이터</b>로 보이며, 단위 가중치로 정제합니다. 원시 데이터를 쓰면 불확도가 더 정확해집니다.");
+    const p1 = S.peaks[0];
+    if (p1) {
+      const L = scherrer(p1.tt, p1.fwhm, S.lam, 0.05);
+      push("infobox", `첫 피크 <b>${p1.tt.toFixed(2)}°</b> (d = ${toD(p1.tt, S.lam).toFixed(2)} Å), FWHM ${p1.fwhm.toFixed(2)}° → Scherrer 면내 결정 크기 약 <b>${L.toFixed(0)} nm</b>.`);
+    }
+    const st = S.peaks.filter((p) => p.tt > 18 && p.tt < 32).sort((p, q) => q.area - p.area)[0];
+    if (st) push("infobox", `π–π 적층 피크 <b>${st.tt.toFixed(2)}°</b> (층간 ${toD(st.tt, S.lam).toFixed(2)} Å), FWHM ${st.fwhm.toFixed(2)}° → 적층 방향 결정 크기 약 <b>${scherrer(st.tt, st.fwhm, S.lam, 0.05).toFixed(1)} nm</b> (${(scherrer(st.tt, st.fwhm, S.lam, 0.05) * 10 / toD(st.tt, S.lam)).toFixed(0)}층).`);
+    else if (p1) push("flagbox", "18–32° 사이에 뚜렷한 π–π 적층 피크가 없습니다. 층간 적층 질서가 약하거나 무질서(turbostratic)일 수 있습니다.");
+    if (S.sim && S.simCell) {
+      const aExp = f ? f.a : guessCell().a, aSim = S.simCell.a, dA = 100 * (aExp - aSim) / aSim;
+      const cls = Math.abs(dA) > 2 ? "flagbox" : "okbox";
+      push(cls, `시뮬레이션 셀 a = <b>${aSim.toFixed(2)} Å</b>${S.simCell.c ? `, c = ${S.simCell.c.toFixed(3)} Å` : ""} vs 실험 a = <b>${aExp.toFixed(2)} Å</b> (${dA >= 0 ? "+" : ""}${dA.toFixed(1)} %). ` +
+        (Math.abs(dA) > 2 ? "차이가 2 %를 넘습니다. 시뮬레이션 구조의 셀이 최적화되지 않았거나, 실제 골격이 굽거나 비스듬히 쌓였을 가능성이 있습니다. zero shift 영향도 함께 확인하세요." : "격자 크기는 잘 맞습니다."));
+    }
+    if (f) {
+      push("okbox", `Pawley: a = <b>${f.a.toFixed(2)}${isFinite(f.esd.a) ? " ± " + f.esd.a.toFixed(2) : ""} Å</b>${f.c ? `, c = ${f.c.toFixed(3)} Å` : ""}, zero ${f.zero >= 0 ? "+" : ""}${f.zero.toFixed(3)}°, Rwp ${(100 * f.Rwp).toFixed(2)} %. 면내 결정 크기 ${f.Lab.toFixed(1)} nm${f.Lc ? `, 적층 ${f.Lc.toFixed(1)} nm` : ""}.`);
+      if (f.DW < 0.5) push("flagbox", `잔차가 강하게 상관되어 있습니다 (Durbin–Watson ${f.DW.toFixed(2)}). smoothing·배경 제거된 데이터일 가능성이 크며, ±σ를 ${f.infl.toFixed(1)}배 키워 보고합니다.`);
+      if (f.refl[0] && f.refl[0].tt < 5 && !$("lpw").checked) push("flagbox", "첫 반사가 5° 아래에 있는데 LP 가중 프로파일이 꺼져 있습니다. 넓은 저각 피크는 LP 인자 때문에 저각으로 치우치므로 켜는 것을 권장합니다.");
+      const ref = f.refl.find((r) => !r.is00l) || f.refl[0];
+      const cmp = S.models?.cif ? ["CIF", S.models.cif] : S.models?.sim ? ["시뮬레이션", S.models.sim] : null;
+      if (cmp) {
+        const [nm, md] = cmp, bad = [];
+        f.refl.forEach((r, k) => {
+          if (r === ref || !isFinite(r.esd)) return;
+          const pe = 100 * r.I / ref.I, sg = 100 * r.esd / ref.I, pm = md.pct[k];
+          if (pm < 0.5 && pe < 0.5) return;
+          const z = (pe - pm) / Math.max(sg, 0.02 * Math.max(pe, pm));
+          if (Math.abs(z) > 3) bad.push(`${r.label}: 실험 ${pe.toFixed(1)} % vs ${nm} ${pm.toFixed(1)} %`);
+        });
+        if (bad.length) push("flagbox", `${nm} 강도와 3σ 이상 다른 반사: <b>${bad.slice(0, 6).join(" · ")}</b>. 특정 반사만 약하거나 강하면 기공 내 guest(용매·이온)나 치환기 배치가 모델과 다를 수 있습니다. 모든 고차 반사가 약하면 면내 무질서가 원인일 수 있습니다.`);
+        else push("okbox", `추출 강도가 ${nm} 강도와 3σ 안에서 일치합니다.`);
+        const mf = S.modelFit?.[nm === "CIF" ? "cif" : "sim"];
+        if (mf) push("infobox", `${nm} 강도를 고정한 fit의 Rwp는 <b>${(100 * mf.Rwp).toFixed(2)} %</b> (Pawley ${(100 * f.Rwp).toFixed(2)} %). 차이가 모델 강도의 부정확성을 나타냅니다.`);
+      }
+    }
+    if (S.scan && S.scan.length > 2) {
+      const a = S.scan.map((q) => q.a), span = Math.max(...a) - Math.min(...a);
+      const best = S.scan.reduce((m, q) => (q.Rwp < m.Rwp ? q : m), S.scan[0]);
+      const slope = (S.scan[S.scan.length - 1].a - S.scan[0].a) / (S.scan[S.scan.length - 1].z - S.scan[0].z);
+      push(span > 0.3 ? "flagbox" : "okbox", `zero shift ±0.15°에서 a가 <b>${Math.min(...a).toFixed(2)}–${Math.max(...a).toFixed(2)} Å</b>로 변합니다 (zero 0.1°당 ${(slope * 0.1).toFixed(2)} Å). Rwp 최소는 zero ${best.z >= 0 ? "+" : ""}${best.z.toFixed(2)}°${best === S.scan[0] || best === S.scan[S.scan.length - 1] ? " (스캔 범위 끝이므로 실제 최소는 더 바깥일 수 있음)" : ""}. ` +
+        (span > 0.3 ? "a와 zero shift가 강하게 상관되어 있으므로 <b>Si 등 내부 표준</b>으로 zero를 고정해야 a를 정확히 정할 수 있습니다." : ""));
+    }
+    box.innerHTML = out.join("");
+    $("findcount").textContent = `${out.length}건`;
+  }
+
+  /* ───────── plotting ───────── */
+  const cv = $("plot"), ctx = cv.getContext("2d");
+  let geom = null;
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function niceTicks(lo, hi, count) {
+    const span = hi - lo; if (!(span > 0)) return [lo];
+    const raw = span / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+    const step = (norm >= 5 ? 5 : norm >= 2 ? 2 : 1) * mag;
+    const out = []; for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) out.push(+t.toFixed(10)); return out;
+  }
+  function fmt(v) { const a = Math.abs(v); if (a >= 1e6) return v.toExponential(1).replace("+", ""); if (a >= 100) return v.toFixed(0); if (a >= 10) return v.toFixed(1); if (a >= 1) return v.toFixed(2); return v.toFixed(3); }
+  const tf = (v) => (S.sqrt ? Math.sign(v) * Math.sqrt(Math.abs(v)) : v);
+
+  function traces() {
+    const T = [];
+    if (S.view === "scan") return T;
+    const s = S.exp; if (!s) return T;
+    if (S.view === "overview" || !S.fit) {
+      const ymax = Math.max(...s.y);
+      T.push({ x: s.x, y: s.y, color: css("--ink"), w: 1.4, label: s.name });
+      if (S.sim) { const m = Math.max(...S.sim.y); T.push({ x: S.sim.x, y: S.sim.y.map((v) => v / m * ymax * 0.85), color: css("--corr"), w: 1.1, label: `${S.sim.name} (정규화)` }); }
+      return T;
+    }
+    const f = S.fit;
+    T.push({ x: f.x, y: f.y, color: css("--ink"), w: 0, dots: true, label: "실험" });
+    T.push({ x: f.x, y: Array.from(f.yc), color: css("--corr"), w: 1.6, label: `Pawley (Rwp ${(100 * f.Rwp).toFixed(2)} %)` });
+    T.push({ x: f.x, y: Array.from(f.bg), color: css("--muted"), w: 1, dash: [4, 3], label: "배경" });
+    const mf = S.modelFit?.cif || S.modelFit?.sim;
+    if (mf) T.push({ x: mf.x, y: Array.from(mf.yc), color: css("--fourth"), w: 1.2, dash: [6, 3], label: `${S.modelFit.cif ? "CIF" : "시뮬"} 강도 고정 (Rwp ${(100 * mf.Rwp).toFixed(1)} %)` });
+    return T;
+  }
+  function draw() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, w, h);
+    if (S.view === "scan") return drawScan(w, h);
+    if (!S.exp) return;
+    const inkC = css("--ink"), mutedC = css("--muted"), ruleC = css("--rule");
+    const padL = 60, padR = 14, padT = 14, padB = 36;
+    const T = traces();
+    const xs = T.length ? T[0].x : S.exp.x;
+    const lo = S.lo ?? xs[0], hi = S.hi ?? xs[xs.length - 1];
+    let ymax = -Infinity, ymin = Infinity;
+    T.forEach((t) => { for (let i = 0; i < t.x.length; i++) { if (t.x[i] < lo || t.x[i] > hi) continue; const v = tf(t.y[i]); if (v > ymax) ymax = v; if (v < ymin) ymin = v; } });
+    if (!isFinite(ymax)) { ymax = 1; ymin = 0; }
+    const f = S.view === "pawley" ? S.fit : null;
+    let diffOff = 0, diffScale = 1;
+    if (f) {
+      const span0 = ymax - Math.min(ymin, 0);
+      diffOff = Math.min(ymin, 0) - span0 * 0.12; ymin = diffOff - span0 * 0.1;
+    }
+    const span = (ymax - ymin) || 1; ymax += span * 0.06; ymin -= span * 0.02;
+    geom = { padL, padR, padT, padB, w, h, lo, hi };
+    const X = (v) => padL + (v - lo) / (hi - lo) * (w - padL - padR);
+    const Y = (v) => padT + (ymax - v) / (ymax - ymin) * (h - padT - padB);
+    ctx.strokeStyle = ruleC; ctx.fillStyle = mutedC; ctx.lineWidth = 1;
+    ctx.font = '11px "IBM Plex Mono", monospace'; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    niceTicks(lo, hi, 8).forEach((t) => { const x = Math.round(X(t)) + .5; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke(); ctx.fillText(String(t), x, h - padB + 6); });
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    niceTicks(ymin, ymax, 5).forEach((t) => { const y = Math.round(Y(t)) + .5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(fmt(S.sqrt ? Math.sign(t) * t * t : t), padL - 8, y); });
+    ctx.strokeStyle = css("--rule-strong"); ctx.beginPath(); ctx.moveTo(padL + .5, padT); ctx.lineTo(padL + .5, h - padB + .5); ctx.lineTo(w - padR, h - padB + .5); ctx.stroke();
+    ctx.fillStyle = mutedC; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText("2θ (°)", (padL + w - padR) / 2, h - 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(padL, padT, w - padL - padR, h - padT - padB); ctx.clip();
+    T.forEach((t) => {
+      ctx.strokeStyle = t.color; ctx.fillStyle = t.color; ctx.lineWidth = t.w || 1; ctx.setLineDash(t.dash || []);
+      if (t.dots) { for (let i = 0; i < t.x.length; i++) { if (t.x[i] < lo || t.x[i] > hi) continue; ctx.fillRect(X(t.x[i]) - 1.2, Y(tf(t.y[i])) - 1.2, 2.4, 2.4); } }
+      else { ctx.beginPath(); let st = false; for (let i = 0; i < t.x.length; i++) { if (t.x[i] < lo || t.x[i] > hi) { st = false; continue; } const px = X(t.x[i]), py = Y(tf(t.y[i])); if (!st) { ctx.moveTo(px, py); st = true; } else ctx.lineTo(px, py); } ctx.stroke(); }
+    });
+    ctx.setLineDash([]);
+    if (f) {
+      // difference curve and reflection ticks
+      ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1; ctx.beginPath();
+      for (let i = 0; i < f.x.length; i++) { const px = X(f.x[i]), py = Y(diffOff + tf(f.y[i] - f.yc[i])); if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+      ctx.stroke();
+      const ref = f.refl.find((r) => !r.is00l) || f.refl[0];
+      const yT = Y(diffOff) - 18;
+      ctx.strokeStyle = css("--focus"); ctx.fillStyle = css("--focus"); ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.font = '10px "IBM Plex Mono", monospace';
+      let lastX = -99;
+      f.refl.forEach((r) => {
+        const px = X(r.tt); ctx.beginPath(); ctx.moveTo(px, yT); ctx.lineTo(px, yT + 9); ctx.stroke();
+        if (r.I / (ref.I || 1) > 0.002 && px - lastX > 26) { ctx.fillText(r.label, px, yT - 2); lastX = px; }
+      });
+    }
+    if (S.view === "overview" && S.peaks.length) {
+      ctx.fillStyle = css("--focus"); ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.font = '10px "IBM Plex Mono", monospace';
+      S.peaks.forEach((p) => { if (p.tt >= lo && p.tt <= hi) ctx.fillText(p.tt.toFixed(2), X(p.tt), Y(tf(p.h)) - 4); });
+    }
+    if (sel.active && sel.x0 != null) { ctx.fillStyle = css("--focus") + "22"; ctx.fillRect(Math.min(sel.x0, sel.x1), padT, Math.abs(sel.x1 - sel.x0), h - padT - padB); }
+    ctx.restore();
+    $("legend").innerHTML = T.map((t) => `<span class="lg"><span class="bar" style="border-top-color:${t.color};border-top-style:${t.dash ? "dashed" : t.dots ? "dotted" : "solid"}"></span>${esc(t.label)}</span>`).join("") +
+      (f ? `<span class="lg"><span class="bar" style="border-top-color:${css("--muted")}"></span>차이</span><span class="lg"><span class="bar" style="border-top-color:${css("--focus")}"></span>반사 위치</span>` : "");
+  }
+  function drawScan(w, h) {
+    const sc = S.scan;
+    $("legend").innerHTML = `<span class="lg"><span class="bar" style="border-top-color:${css("--corr")}"></span>a (Å)</span><span class="lg"><span class="bar" style="border-top-color:${css("--raw")};border-top-style:dashed"></span>Rwp (%)</span>`;
+    ctx.fillStyle = css("--muted"); ctx.font = '12px "IBM Plex Sans", sans-serif'; ctx.textAlign = "center";
+    if (!sc || !sc.length) { ctx.fillText("zero 스캔을 실행하세요.", w / 2, h / 2); return; }
+    const padL = 60, padR = 60, padT = 18, padB = 36;
+    const zlo = sc[0].z - 0.02, zhi = sc[sc.length - 1].z + 0.02;
+    const a = sc.map((q) => q.a), r = sc.map((q) => 100 * q.Rwp);
+    const alo = Math.min(...a), ahi = Math.max(...a), apad = (ahi - alo) * 0.15 || 0.1;
+    const rlo = 0, rhi = Math.max(...r) * 1.2;
+    const X = (z) => padL + (z - zlo) / (zhi - zlo) * (w - padL - padR);
+    const Ya = (v) => padT + (ahi + apad - v) / (ahi - alo + 2 * apad) * (h - padT - padB);
+    const Yr = (v) => padT + (rhi - v) / (rhi - rlo) * (h - padT - padB);
+    ctx.strokeStyle = css("--rule"); ctx.font = '11px "IBM Plex Mono", monospace'; ctx.textBaseline = "top";
+    sc.forEach((q) => { const x = X(q.z) + .5; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke(); ctx.fillText((q.z >= 0 ? "+" : "") + q.z.toFixed(2), x, h - padB + 6); });
+    ctx.fillText("zero shift (°)", (padL + w - padR) / 2, h - 16);
+    ctx.textBaseline = "middle"; ctx.textAlign = "right"; ctx.fillStyle = css("--corr");
+    niceTicks(alo - apad, ahi + apad, 5).forEach((t) => ctx.fillText(t.toFixed(2), padL - 8, Ya(t)));
+    ctx.textAlign = "left"; ctx.fillStyle = css("--raw");
+    niceTicks(rlo, rhi, 5).forEach((t) => ctx.fillText(t.toFixed(1), w - padR + 8, Yr(t)));
+    const line = (Y, arr, col, dash) => { ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.8; ctx.setLineDash(dash); ctx.beginPath(); sc.forEach((q, i) => { const px = X(q.z), py = Y(arr[i]); if (!i) ctx.moveTo(px, py); else ctx.lineTo(px, py); }); ctx.stroke(); ctx.setLineDash([]); sc.forEach((q, i) => { ctx.beginPath(); ctx.arc(X(q.z), Y(arr[i]), 3.5, 0, 7); ctx.fill(); }); };
+    line(Ya, a, css("--corr"), []); line(Yr, r, css("--raw"), [5, 4]);
+  }
+
+  /* ───────── interaction ───────── */
+  const sel = { active: false, x0: null, x1: null };
+  const pxToX = (px) => { if (!geom) return null; const { padL, padR, w, lo, hi } = geom; return lo + (px - padL) / (w - padL - padR) * (hi - lo); };
+  cv.addEventListener("pointerdown", (e) => { if (S.view === "scan") return; const r = cv.getBoundingClientRect(); sel.active = true; sel.x0 = sel.x1 = e.clientX - r.left; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", (e) => {
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left;
+    if (sel.active) { sel.x1 = px; draw(); }
+    const t = pxToX(px);
+    if (t != null && S.exp && S.view !== "scan") $("readout").textContent = `2θ ${t.toFixed(2)}°\nd ${toD(t, S.lam).toFixed(2)} Å`;
+  });
+  cv.addEventListener("pointerup", () => {
+    if (!sel.active) return; sel.active = false;
+    if (Math.abs(sel.x1 - sel.x0) > 12) { const a = pxToX(sel.x0), b = pxToX(sel.x1); S.lo = Math.min(a, b); S.hi = Math.max(a, b); setRange(null); }
+    sel.x0 = sel.x1 = null; draw();
+  });
+  cv.addEventListener("dblclick", () => { S.lo = S.hi = null; setRange(document.querySelector('#rangechips .chip[data-lo=""]')); draw(); });
+  cv.addEventListener("pointerleave", () => { $("readout").textContent = ""; });
+  function setRange(active) { document.querySelectorAll("#rangechips .chip[data-lo]").forEach((c) => c.setAttribute("aria-pressed", c === active ? "true" : "false")); }
+  document.querySelectorAll("#rangechips .chip[data-lo]").forEach((c) => c.addEventListener("click", () => {
+    const lo = parseFloat(c.dataset.lo), hi = parseFloat(c.dataset.hi); S.lo = isFinite(lo) ? lo : null; S.hi = isFinite(hi) ? hi : null; setRange(c); draw();
+  }));
+  $("sqrtchip").addEventListener("click", () => { S.sqrt = !S.sqrt; $("sqrtchip").setAttribute("aria-pressed", String(S.sqrt)); draw(); });
+  function setView(v) { S.view = v; document.querySelectorAll("#viewchips .chip").forEach((o) => o.setAttribute("aria-pressed", o.dataset.view === v ? "true" : "false")); }
+  document.querySelectorAll("#viewchips .chip").forEach((c) => c.addEventListener("click", () => { setView(c.dataset.view); draw(); }));
+
+  /* ───────── files ───────── */
+  function readText(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsText(file); }); }
+  async function readFiles(list) {
+    const f = list && list[0]; if (!f) return;
+    try { ingest(await readText(f), f.name.replace(/\.[^.]+$/, "")); $("status").textContent = `${f.name} 읽음`; }
+    catch (err) { $("status").textContent = "읽기 실패: " + err.message; }
+  }
+  function wireDrop(dropId, fileId, handler) {
+    const d = $(dropId), inp = $(fileId);
+    d.addEventListener("click", () => inp.click());
+    d.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inp.click(); } });
+    inp.addEventListener("change", (e) => handler(e.target.files));
+    ["dragenter", "dragover"].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.add("over"); }));
+    ["dragleave", "drop"].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.remove("over"); }));
+    d.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) handler(e.dataTransfer.files); });
+  }
+  wireDrop("drop", "file", readFiles);
+  wireDrop("cifdrop", "ciffile", async (list) => {
+    const f = list && list[0]; if (!f) return;
+    try {
+      S.cif = parseCIF(await readText(f));
+      const [a, b, c, al, be, ga] = S.cif.cell;
+      $("cifname").value = `${f.name} · ${S.cif.sites.length}원자`;
+      $("cellinfo").textContent = `CIF ${a.toFixed(2)}, ${b.toFixed(2)}, ${c.toFixed(2)} Å · ${al.toFixed(1)}, ${be.toFixed(1)}, ${ga.toFixed(1)}°`;
+      if (S.fit) { S.models = modelIntensities(S.fit); renderFit(); renderFindings(); }
+    } catch (err) { $("cifname").value = "읽기 실패"; $("status").textContent = "CIF: " + err.message; }
+  });
+  $("selexp").addEventListener("change", choose);
+  $("selsim").addEventListener("change", choose);
+  $("lattice").addEventListener("change", () => { $("a0").value = ""; choose(); });
+  $("lamsel").addEventListener("change", () => { if ($("lamsel").value !== "custom") $("lam").value = $("lamsel").value; S.lam = parseFloat($("lam").value); if (S.exp) choose(); });
+  $("lam").addEventListener("change", () => { S.lam = parseFloat($("lam").value) || 1.5406; $("lamsel").value = "custom"; if (S.exp) choose(); });
+  $("guess").addEventListener("click", () => { const g = guessCell(); $("a0").value = g.a.toFixed(2); if (g.c) $("c0").value = g.c.toFixed(3); });
+  $("fromsim").addEventListener("click", () => { if (!S.simCell) { $("status").textContent = "시뮬레이션 셀이 없습니다."; return; } $("a0").value = S.simCell.a.toFixed(2); if (S.simCell.c) $("c0").value = S.simCell.c.toFixed(3); });
+  $("run").addEventListener("click", onRun);
+  $("scan").addEventListener("click", onScan);
+
+  /* ───────── export ───────── */
+  const sandboxed = !!(window.claude && typeof window.claude.use === "function");
+  let downloads = null;
+  if (sandboxed) window.claude.use("downloads").then((d) => { downloads = d; }).catch(() => {});
+  async function saveFile(filename, data, mime) {
+    if (sandboxed) { if (!downloads) throw Object.assign(new Error("unavailable"), { code: "unavailable" }); await downloads.save({ filename, data }); return; }
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime || "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+  function summaryText() {
+    const f = S.fit; if (!f) return "";
+    const L = [`# COF PXRD 워크벤치 요약`, `실험: ${S.exp.name} · λ ${S.lam} Å · ${f.tlo.toFixed(1)}–${f.thi.toFixed(1)}°`,
+      `Pawley (${f.lat === "hex" ? "hexagonal" : "tetragonal"}): a = ${f.a.toFixed(3)}${isFinite(f.esd.a) ? " ± " + f.esd.a.toFixed(3) : ""} Å${f.c ? `, c = ${f.c.toFixed(3)} Å` : ""}, zero ${f.zero.toFixed(3)}°, Rwp ${(100 * f.Rwp).toFixed(2)} %, DW ${f.DW.toFixed(2)}`,
+      `결정 크기: 면내 ${f.Lab.toFixed(1)} nm${f.Lc ? `, 적층 ${f.Lc.toFixed(1)} nm` : ""}`];
+    if (S.simCell) L.push(`시뮬레이션 셀: a = ${S.simCell.a.toFixed(3)} Å${S.simCell.c ? `, c = ${S.simCell.c.toFixed(3)} Å` : ""}`);
+    if (S.scan) L.push(`zero 스캔: ` + S.scan.map((q) => `${q.z.toFixed(2)}° → a ${q.a.toFixed(2)} Å (Rwp ${(100 * q.Rwp).toFixed(2)} %)`).join("; "));
+    const ref = f.refl.find((r) => !r.is00l) || f.refl[0];
+    L.push("hkl, 2θ, d, I/Iref(%), ±σ" + (S.models?.sim ? ", sim(%)" : "") + (S.models?.cif ? ", CIF(%)" : ""));
+    f.refl.forEach((r, k) => L.push([r.label, r.tt.toFixed(3), r.d.toFixed(3), (100 * r.I / ref.I).toFixed(2), isFinite(r.esd) ? (100 * r.esd / ref.I).toFixed(2) : "", S.models?.sim ? S.models.sim.pct[k].toFixed(2) : null, S.models?.cif ? S.models.cif.pct[k].toFixed(2) : null].filter((v) => v !== null).join(", ")));
+    L.push("", ...Array.from($("findings").querySelectorAll("div")).map((d) => "- " + d.textContent));
+    return L.join("\n");
+  }
+  $("dlcsv").addEventListener("click", async () => {
+    const f = S.fit; if (!f) { $("exportstatus").textContent = "먼저 Pawley를 실행하세요."; return; }
+    const lines = [`# Pawley fit: a=${f.a.toFixed(4)} c=${f.c ? f.c.toFixed(4) : ""} zero=${f.zero.toFixed(4)} Rwp=${f.Rwp.toFixed(5)}`, "2theta_deg,obs,calc,background,diff"];
+    for (let i = 0; i < f.x.length; i++) lines.push([f.x[i].toFixed(4), f.y[i].toPrecision(6), f.yc[i].toPrecision(6), f.bg[i].toPrecision(6), (f.y[i] - f.yc[i]).toPrecision(6)].join(","));
+    try { await saveFile("pawley_fit.csv", "﻿" + lines.join("\n"), "text/csv;charset=utf-8"); $("exportstatus").textContent = "패턴 CSV를 저장했습니다."; } catch (e) { $("exportstatus").textContent = "저장 실패"; }
+  });
+  $("dlref").addEventListener("click", async () => {
+    const f = S.fit; if (!f) { $("exportstatus").textContent = "먼저 Pawley를 실행하세요."; return; }
+    const ref = f.refl.find((r) => !r.is00l) || f.refl[0];
+    const lines = ["hkl,2theta_deg,d_A,multiplicity,I_integrated,I_esd,I_rel_pct,I_rel_esd_pct,sim_pct,cif_pct"];
+    f.refl.forEach((r, k) => lines.push([r.label, r.tt.toFixed(4), r.d.toFixed(4), r.mult, r.I.toPrecision(6), isFinite(r.esd) ? r.esd.toPrecision(4) : "", (100 * r.I / ref.I).toFixed(3), isFinite(r.esd) ? (100 * r.esd / ref.I).toFixed(3) : "", S.models?.sim ? S.models.sim.pct[k].toFixed(3) : "", S.models?.cif ? S.models.cif.pct[k].toFixed(3) : ""].join(",")));
+    try { await saveFile("pawley_reflections.csv", "﻿" + lines.join("\n"), "text/csv;charset=utf-8"); $("exportstatus").textContent = "반사 표를 저장했습니다."; } catch (e) { $("exportstatus").textContent = "저장 실패"; }
+  });
+  $("dlpng").addEventListener("click", async () => {
+    const blob = await new Promise((r) => cv.toBlob(r, "image/png")); if (!blob) return;
+    try { await saveFile("pxrd_plot.png", blob, "image/png"); $("exportstatus").textContent = "그래프를 저장했습니다."; } catch (e) { $("exportstatus").textContent = "저장 실패"; }
+  });
+  $("copysum").addEventListener("click", async () => {
+    const t = summaryText(); if (!t) { $("exportstatus").textContent = "먼저 Pawley를 실행하세요."; return; }
+    try { await navigator.clipboard.writeText(t); $("exportstatus").textContent = "요약을 클립보드에 복사했습니다."; }
+    catch { const ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); $("exportstatus").textContent = "복사가 막혀 텍스트를 선택했습니다. Ctrl+C를 누르세요."; setTimeout(() => ta.remove(), 15000); }
+  });
+
+  /* ───────── demo: synthetic hcb COF (a = 30 Å, c = 3.45 Å) with a simulation at a = 31 Å ───────── */
+  function demo() {
+    const lam = 1.5406, mk = (a, c, fw, step, noise, tail) => {
+      const x = [], y = [];
+      const gs = buildGroups("hex", a, c, true, lam, 2, 36);
+      // honeycomb of uniform line density → |F|² of hk0; 001 from layer stacking
+      const nodeA = [1 / 3, 2 / 3], nodeB = [2 / 3, 1 / 3], nbs = [[2 / 3, 1 / 3], [-1 / 3, 1 / 3], [2 / 3, 4 / 3]];
+      const I = gs.map((g) => {
+        const [h, k, l] = g.rep; let re = 0, im = 0;
+        for (const nb of nbs) for (let t = 0; t < 1; t += 0.025) { const fx = nodeA[0] + (nb[0] - nodeA[0]) * t, fy = nodeA[1] + (nb[1] - nodeA[1]) * t; const ph = 2 * Math.PI * (h * fx + k * fy); re += Math.cos(ph); im += Math.sin(ph); }
+        const s = 1 / (2 * g.d); return g.mult * (re * re + im * im) * Math.exp(-2 * 3 * s * s) * lp(g.tt) * (l ? 0.12 : 1);
+      });
+      const Imax = Math.max(...I);
+      for (let t = 2; t <= 35 + 1e-9; t += step) {
+        let v = tail ? tail * Math.exp(-(t - 2) / 0.5) : 0;
+        gs.forEach((g, j) => { const H = g.lz ? fw * 5 : fw / Math.cos(g.tt * D2R / 2), z = 4 * (t - g.tt) ** 2 / (H * H); v += 8000 * I[j] / Imax * (0.5 / (1 + z) + 0.5 * Math.exp(-Math.LN2 * z)); });
+        x.push(+t.toFixed(3)); y.push(v + (noise ? noise * (Math.random() - 0.5) : 0));
+      }
+      return { x, y };
+    };
+    const e = mk(30.0, 3.45, 0.6, 0.02, 60, 9000), s = mk(31.0, 3.42, 0.06, 0.05, 0, 0);
+    const n = Math.max(e.x.length, s.x.length), rows = ["2theta,Simulation,2theta,Experiment (demo)"];
+    for (let i = 0; i < n; i++) rows.push([s.x[i] ?? "", s.y[i] != null ? s.y[i].toFixed(3) : "", e.x[i] ?? "", e.y[i] != null ? e.y[i].toFixed(2) : ""].join(","));
+    ingest(rows.join("\n"), "demo");
+    $("status").textContent = "예제: 육방정 COF (실험 a = 30.0 Å, 시뮬 a = 31.0 Å)";
+  }
+  $("demo").addEventListener("click", demo);
+
+  window.addEventListener("resize", () => draw());
+  if (window.matchMedia) { const mq = window.matchMedia("(prefers-color-scheme: dark)"); (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(() => draw()); }
+  demo();
+  window.__xrd = { S, parseXRD, parseCIF, runPawley, findPeaks, indexPeaks, buildGroups, cifReflections, ingest, onRun, onScan };
+})();
+</script>
+</body>
+</html>

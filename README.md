@@ -28,6 +28,7 @@ ATR-FTIR은 반사를 측정하므로 Beer–Lambert 법칙이 그대로 성립�
 | 파일 | 내용 |
 | --- | --- |
 | `atr_kk.py` | 보정 라이브러리. 단독 실행하면 모사 스펙트럼으로 자체 검증을 수행합니다. |
+| `cof_xrd.py` | COF 분말 XRD 분석 라이브러리·명령줄 도구. `python cof_xrd.py --selftest`로 검증합니다. |
 | `atr-workbench.html` | 브라우저에서 파일을 올려 보정하고 그래프·CSV를 얻는 단일 파일 웹 도구. 외부 의존성이 없습니다. |
 
 ## 사용법
@@ -76,3 +77,56 @@ python atr_kk.py
 ## 인용
 
 이 코드를 사용해 얻은 결과를 발표할 때는 위 논문을 인용하십시오.
+
+---
+
+# COF PXRD 워크벤치 (`xrd-workbench.html`)
+
+COF 분말 XRD의 피크 분석, Pawley 정제, 시뮬레이션·구조 모델 비교를 브라우저에서 수행합니다. 외부 의존성이 없는 단일 HTML 파일입니다.
+
+## 기능
+
+- **입력**: `(2θ, I)(2θ, I)…` 쌍 배열(시뮬레이션·실험 열 길이가 달라도 됨) 또는 `2θ + 다중 I`. 시뮬레이션 열은 자동 인식합니다. 선택적으로 CIF(대칭 연산자·점유율 지원)를 올려 모델 강도를 계산합니다.
+- **피크 분석**: 피크 위치·d·FWHM·Scherrer 결정 크기, 육방정/정방정 자동 지수화, π–π 적층 피크와 층 수 추정.
+- **Pawley 정제**: 격자상수(a, c), zero shift, Thompson–Cox–Hastings pseudo-Voigt 폭(면내·적층 방향 분리), 비대칭, 저각 지수 배경 + Chebyshev 배경. 비선형 파라미터는 Levenberg–Marquardt, 반사 강도와 배경은 NNLS로 풉니다.
+- **LP 가중 프로파일**: 5° 이하의 넓은 피크는 Lorentz–편광 인자가 피크 폭 안에서 크게 변해 저각으로 치우칩니다. 이를 프로파일에 반영합니다.
+- **zero 스캔**: zero shift를 ±0.15°로 고정하며 격자상수·Rwp 변화를 보여 줍니다. 저각 반사만 있는 COF에서 a와 zero의 상관을 확인하는 데 필요합니다.
+- **모델 비교**: Pawley로 추출한 상대 강도를 시뮬레이션·CIF 강도와 비교해 3σ 이상 벗어나는 반사를 표시하고, 모델 강도를 고정한 fit의 Rwp를 계산합니다.
+- **자동 해석**: 셀 불일치, 결정 크기, 잔차 상관(Durbin–Watson), 강도 불일치, a–zero 상관을 요약합니다.
+- **출력**: 패턴 CSV(obs/calc/bg/diff), 반사 표 CSV, 그래프 PNG, 요약 텍스트.
+
+## Python (`cof_xrd.py`)
+
+웹 워크벤치와 같은 절차를 스크립트로 수행합니다. 필요한 패키지는 `numpy`, `scipy`이고, 그림을 저장할 때만 `matplotlib`을 씁니다.
+
+```bash
+python cof_xrd.py data.csv                              # 실험·시뮬레이션 열 자동 인식, Pawley, 시뮬레이션 비교
+python cof_xrd.py data.csv --cif model.cif --scan --plot --out result
+python cof_xrd.py --selftest                            # 합성 육방정 COF로 a·강도 복원 검증
+```
+
+주요 옵션: `--lattice hex|tet`, `--range LO HI`(정제 구간), `--zero 0.0`(zero 고정), `--exp/--sim`(열 번호 지정), `--lam`(파장), `--B`(CIF 강도용 등방 온도인자).
+출력: `*_pawley_fit.csv`(obs/calc/bg/diff), `*_reflections.csv`(반사별 강도·±σ·모델 강도), `*_pawley.png`.
+
+```python
+import cof_xrd as cx
+series = cx.load_xrd("data.csv")
+exp = next(s for s in series if not s.is_sim)
+fit = cx.pawley(exp.x, exp.y, lattice="hex", tt_range=(2.3, 12))
+print(fit.summary())
+scan = cx.zero_scan(exp.x, exp.y, lattice="hex", tt_range=(2.3, 12))
+st = cx.read_cif("model.cif")
+_, d, tt, I = cx.structure_reflections(st, tt_max=20)
+pct, _ = cx.model_percentages(fit, d, I)
+print(cx.compare(fit, pct))                             # 3σ 이상 다른 반사
+```
+
+## 불확도
+
+±σ는 공분산 행렬에서 구하고 잔차의 직렬 상관에 따라 √(2/DW)배 키웁니다. zero shift 상관에 의한 계통 오차는 포함되지 않으므로 zero 스캔 결과를 함께 보고하세요.
+
+## 참고 문헌
+
+- G. S. Pawley, *J. Appl. Cryst.* **1981**, 14, 357–361.
+- P. Thompson, D. E. Cox, J. B. Hastings, *J. Appl. Cryst.* **1987**, 20, 79–83.
+- D. T. Cromer, J. B. Mann, *Acta Cryst.* **1968**, A24, 321–324 (원자 산란인자).

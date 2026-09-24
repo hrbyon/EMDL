@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>ATR-FTIR 보정 워크벤치</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
@@ -77,7 +78,15 @@
   h1 { font-size: 26px; font-weight: 600; letter-spacing: -.015em; margin: 4px 0 6px; text-wrap: balance; }
   .lede { color: var(--ink-2); max-width: 62ch; margin: 0; }
   .cite { font-family: var(--mono); font-size: 11.5px; color: var(--muted); max-width: 34ch; text-align: right; line-height: 1.6; }
-  @media (max-width: 720px) { .cite { text-align: left; } }
+  .mast-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .homelink {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; text-decoration: none;
+    color: var(--ink-2); background: var(--surface); border: 1px solid var(--rule-strong);
+    border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+  }
+  .homelink:hover { border-color: var(--focus); color: var(--ink); }
+  .homelink:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  @media (max-width: 720px) { .cite { text-align: left; } .mast-right { align-items: flex-start; } }
 
   .shell { display: grid; grid-template-columns: 312px minmax(0, 1fr); gap: 22px; margin-top: 22px; align-items: start; }
   @media (max-width: 960px) { .shell { grid-template-columns: minmax(0, 1fr); } }
@@ -152,6 +161,20 @@
   .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
   .steps li { counter-increment: s; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); display: grid; grid-template-columns: 20px 1fr; gap: 6px; }
   .steps li::before { content: counter(s); color: var(--muted); }
+
+  /* usage guide (moved from the index page) */
+  .guide { margin-top: 28px; border-top: 1px solid var(--rule-strong); padding-top: 4px; max-width: 880px; }
+  .guide h2 { font-size: 13px; font-family: var(--mono); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 28px 0 12px; }
+  .gsteps { counter-reset: g; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .gsteps li { counter-increment: g; display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
+  .gsteps li::before { content: counter(g); font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .gsecondary { display: flex; flex-direction: column; gap: 10px; }
+  .grow { display: grid; grid-template-columns: 148px 1fr; gap: 6px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .grow .k { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .grow .v { font-size: 13.5px; color: var(--ink-2); }
+  @media (max-width: 560px) { .grow { grid-template-columns: 1fr; } }
+  .gcite { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 12px; }
+  .gcite a { color: var(--focus); }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 
@@ -162,7 +185,10 @@
       <h1>ATR-FTIR 보정 워크벤치</h1>
       <p class="lede">원시 ATR 스펙트럼을 올리면 Bertie–Lan 수정 Kramers–Krönig 절차로 광학상수를 복원해 투과형 FTIR과 비교 가능한 흡광 스펙트럼을 만들고, 보정 전후 피크 위치와 CSV를 내보냅니다.</p>
     </div>
-    <div class="cite">Kim, Cho &amp; Kwak,<br>Anal. Chem. 2024, 96, 15924–15930<br>doi:10.1021/acs.analchem.4c02779</div>
+    <div class="mast-right">
+      <a class="homelink" id="home" href="index.html" hidden>← 도구 목록</a>
+      <div class="cite">Kim, Cho &amp; Kwak,<br>Anal. Chem. 2024, 96, 15924–15930<br>doi:10.1021/acs.analchem.4c02779</div>
+    </div>
   </header>
 
   <div class="shell">
@@ -332,6 +358,32 @@
       </div>
     </div>
   </div>
+
+  <section class="guide" aria-label="사용 안내">
+    <h2>쓰는 순서</h2>
+    <ol class="gsteps">
+      <li><span>원시 ATR 스펙트럼 파일을 올립니다. 쉼표·탭·공백 구분과 <code>x + 다중 y</code>, <code>(x,y)(x,y)…</code> 배열을 자동 인식합니다.</span></li>
+      <li><span>y축 형식과 흡수 없는 기준선 구간을 지정합니다.</span></li>
+      <li><span>ATR 결정·입사각·<code>n(∞)</code>를 설정하고 보정을 실행합니다.</span></li>
+      <li><span>피크 표에서 보정 전후 이동량을 확인하고 CSV로 내보냅니다.</span></li>
+    </ol>
+
+    <h2>보정 방법</h2>
+    <div class="gsecondary">
+      <div class="grow"><span class="k">1 · 반사율</span><span class="v">pATR → R → R<sub>s</sub> (45°에서 R<sub>p</sub> = R<sub>s</sub>²)</span></div>
+      <div class="grow"><span class="k">2 · 위상</span><span class="v">ln√R<sub>s</sub>의 수정 Kramers–Krönig 적분(Maclaurin)으로 Θ<sub>s</sub></span></div>
+      <div class="grow"><span class="k">3 · 광학상수</span><span class="v">Fresnel 식 역산으로 n̂ = n + ik</span></div>
+      <div class="grow"><span class="k">4 · 흡광도</span><span class="v">A = 1.74πkνl 로 재구성</span></div>
+      <div class="grow"><span class="k">검증</span><span class="v">모사 스펙트럼에서 원시 ATR의 6–7 cm⁻¹ red shift를 0.1 cm⁻¹ 이내로 복원</span></div>
+    </div>
+    <p class="gcite">보정 절차 출처 — Taewoo Kim, Minhaeng Cho, Kyungwon Kwak, <i>Quantitative Analysis of the Li-Ion Solvation Structure in Li-Ion Battery Electrolytes Using ATR-FTIR Spectroscopy</i>, <b>Anal. Chem.</b> 2024, 96, 15924–15930. <a href="https://doi.org/10.1021/acs.analchem.4c02779">doi:10.1021/acs.analchem.4c02779</a><br>이 도구로 얻은 결과를 발표할 때는 위 논문을 인용하십시오.</p>
+
+    <h2>Python으로 쓰기</h2>
+    <div class="gsecondary">
+      <div class="grow"><span class="k">atr_kk.py</span><span class="v">동일한 보정을 스크립트로 수행합니다. <code>atr_kk_correct(nu, R, n_inf, n0, theta_deg, path_um)</code>가 n, k, 보정 흡광도를 돌려줍니다. <code>python atr_kk.py</code>로 자체 검증을 실행할 수 있습니다.</span></div>
+      <div class="grow"><span class="k">읽을 때 주의</span><span class="v">R<sub>min</sub>이 0.02 아래로 내려간 밴드는 전반사 조건이 깨진 것이라 위치·세기를 신뢰할 수 없습니다. n(∞) 선택에 따라 배위수가 달라지므로 스캔 기능으로 민감도를 함께 확인하세요.</span></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -1003,6 +1055,8 @@
   // downloads capability is the only way out; anywhere else (GitHub Pages, a local
   // file, any web host) a plain anchor download works.
   const sandboxed = !!(window.claude && typeof window.claude.use === "function");
+  // index.html sits next to this page on a web host; inside the artifact it doesn't exist
+  if (!sandboxed) $("home").hidden = false;
   let downloads = null;
   if (sandboxed) {
     window.claude.use("downloads")

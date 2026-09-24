@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EMDL · 전해액 진동분광 도구</title>
-<meta name="description" content="ATR-FTIR 스펙트럼을 Kramers-Kronig 절차로 보정하는 도구 모음.">
+<title>EMDL · 분석 도구</title>
+<meta name="description" content="ATR-FTIR Kramers-Kronig 보정과 COF 분말 XRD Pawley 분석을 브라우저에서 수행하는 도구 모음.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
   :root {
@@ -81,20 +81,8 @@
     a.tool .go { justify-self: start; }
   }
 
-  .secondary { display: flex; flex-direction: column; gap: 10px; }
-  .row { display: grid; grid-template-columns: 148px 1fr; gap: 6px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
-  .row .k { font-family: var(--mono); font-size: 12px; color: var(--muted); }
-  .row .v { font-size: 13.5px; color: var(--ink-2); }
-  .row .v a { color: var(--focus); }
-  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
 
-  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
-  .steps li { counter-increment: s; display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
-  .steps li::before { content: counter(s); font-family: var(--mono); font-size: 12px; color: var(--muted); }
-  code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
 
-  .cite { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 12px; }
-  .cite a { color: var(--focus); }
   footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--rule-strong); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 20px; }
   footer a { color: var(--focus); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -104,8 +92,8 @@
 <div class="wrap">
   <header>
     <div class="eyebrow">Electrochemical Materials &amp; Devices Lab</div>
-    <h1>전해액 진동분광 도구</h1>
-    <p class="lede">ATR-FTIR로 측정한 전해액 스펙트럼을 Kramers–Krönig 절차로 보정해, 투과형 FTIR과 비교 가능한 흡광 스펙트럼과 배위 구조를 얻기 위한 도구 모음입니다.</p>
+    <h1>EMDL 분석 도구</h1>
+    <p class="lede">전해액 ATR-FTIR 스펙트럼 보정과 COF 분말 XRD 분석을 브라우저에서 바로 수행하는 도구 모음입니다. 설치가 필요 없고, 데이터는 외부로 전송되지 않습니다.</p>
   </header>
 
   <h2>도구</h2>
@@ -123,30 +111,20 @@
         <span class="tag">ZnSe · Ge · 다이아몬드</span>
       </div>
     </a>
-  </div>
-
-  <h2>쓰는 순서</h2>
-  <ol class="steps">
-    <li><span>원시 ATR 스펙트럼 파일을 올립니다. 쉼표·탭·공백 구분과 <code>x + 다중 y</code>, <code>(x,y)(x,y)…</code> 배열을 자동 인식합니다.</span></li>
-    <li><span>y축 형식과 흡수 없는 기준선 구간을 지정합니다.</span></li>
-    <li><span>ATR 결정·입사각·<code>n(∞)</code>를 설정하고 보정을 실행합니다.</span></li>
-    <li><span>피크 표에서 보정 전후 이동량을 확인하고 CSV로 내보냅니다.</span></li>
-  </ol>
-
-  <h2>보정 방법</h2>
-  <div class="secondary">
-    <div class="row"><span class="k">1 · 반사율</span><span class="v">pATR → R → R<sub>s</sub> (45°에서 R<sub>p</sub> = R<sub>s</sub>²)</span></div>
-    <div class="row"><span class="k">2 · 위상</span><span class="v">ln√R<sub>s</sub>의 수정 Kramers–Krönig 적분(Maclaurin)으로 Θ<sub>s</sub></span></div>
-    <div class="row"><span class="k">3 · 광학상수</span><span class="v">Fresnel 식 역산으로 n̂ = n + ik</span></div>
-    <div class="row"><span class="k">4 · 흡광도</span><span class="v">A = 1.74πkνl 로 재구성</span></div>
-    <div class="row"><span class="k">검증</span><span class="v">모사 스펙트럼에서 원시 ATR의 6–7 cm⁻¹ red shift를 0.1 cm⁻¹ 이내로 복원</span></div>
-  </div>
-  <p class="cite">보정 절차 출처 — Taewoo Kim, Minhaeng Cho, Kyungwon Kwak, <i>Quantitative Analysis of the Li-Ion Solvation Structure in Li-Ion Battery Electrolytes Using ATR-FTIR Spectroscopy</i>, <b>Anal. Chem.</b> 2024, 96, 15924–15930. <a href="https://doi.org/10.1021/acs.analchem.4c02779">doi:10.1021/acs.analchem.4c02779</a><br>이 도구로 얻은 결과를 발표할 때는 위 논문을 인용하십시오.</p>
-
-  <h2>Python으로 쓰기</h2>
-  <div class="secondary">
-    <div class="row"><span class="k">atr_kk.py</span><span class="v">동일한 보정을 스크립트로 수행합니다. <code>atr_kk_correct(nu, R, n_inf, n0, theta_deg, path_um)</code>가 n, k, 보정 흡광도를 돌려줍니다. <code>python atr_kk.py</code>로 자체 검증을 실행할 수 있습니다.</span></div>
-    <div class="row"><span class="k">읽을 때 주의</span><span class="v">R<sub>min</sub>이 0.02 아래로 내려간 밴드는 전반사 조건이 깨진 것이라 위치·세기를 신뢰할 수 없습니다. n(∞) 선택에 따라 배위수가 달라지므로 스캔 기능으로 민감도를 함께 확인하세요.</span></div>
+    <a class="tool" href="xrd-workbench.html">
+      <div>
+        <h3>COF PXRD 워크벤치</h3>
+        <p>실험 패턴과 시뮬레이션(또는 CIF 구조)을 올리면 피크를 찾고, 육방정·정방정 셀로 Pawley 정제를 수행해 격자상수·결정 크기·반사 강도를 구합니다. 시뮬레이션과의 셀·강도 차이와 zero shift 상관을 자동으로 해석합니다.</p>
+      </div>
+      <span class="go">열기</span>
+      <div class="tags">
+        <span class="tag">CSV · XY · CIF</span>
+        <span class="tag">Pawley</span>
+        <span class="tag">Scherrer</span>
+        <span class="tag">시뮬레이션 비교</span>
+        <span class="tag">Python</span>
+      </div>
+    </a>
   </div>
 
   <footer>
