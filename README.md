@@ -88,7 +88,7 @@ COF 분말 XRD의 피크 분석, Pawley 정제, 시뮬레이션·구조 모델 �
 
 ## 구조 시뮬레이션 (A)
 
-- **라이브러리**: xtb 6.7.1 GFN-FF(주기 경계)로 최적화한 층 — TpBd-(SO3Li)2, TpBD, TpPa-SO3Li, 2D-PAI, COF-1. CIF를 올리면 첫 층을 잘라 씁니다.
+- **라이브러리**: xtb 6.7.1 GFN-FF(주기 경계)로 최적화한 층 — TpBD, TpPa-SO3Li, 2D-PAI, COF-1. CIF를 올리면 첫 층을 잘라 씁니다.
 - **적층 스캔**: AA, AB, inclined·serrated(1–4 Å, 0°/30°)를 모두 fit해 Rwp로 순위를 매기고, 계산해 둔 GFN-FF 적층 에너지를 옆에 표시합니다.
 - **무질서 스캔**: 지정한 치환기 원소(예: `S,Li`, 술포네이트 O 포함)의 점유율을 0–1로 바꿔 fit합니다.
 - **내보내기**: 현재 적층 모델의 CIF, xtb/DFT용 POSCAR.
