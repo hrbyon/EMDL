@@ -136,6 +136,8 @@
   .sectitle small { font-size: 12.5px; font-weight: 400; color: var(--muted); }
   @media (max-width: 640px) { .sectitle small { flex-basis: 100%; } }
   #simplot { height: 460px; }
+  .concbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border-bottom: 1px solid var(--rule); }
+  .concbar .status { margin: 0; }
   /* shared data strip: one row on wide screens */
   .datastrip { margin-top: 26px; }
   @media (min-width: 981px) {
@@ -444,6 +446,10 @@
   <h2 class="sectitle"><span>C</span> 종합 결론 <small>시뮬레이션 + Pawley</small></h2>
   <section class="panel">
     <div class="phead"><span class="t">종합 결론</span><span class="n" id="conccount">—</span></div>
+    <div class="pbody concbar">
+      <button class="primary" id="concrun">전체 분석 (zero·적층·무질서 스캔 포함)</button>
+      <span class="status" id="concstatus"></span>
+    </div>
     <div class="findings" id="conclusion"></div>
   </section>
 
@@ -1201,7 +1207,7 @@
     $("cellinfo").textContent = `a≈${g.a.toFixed(1)}${g.c ? ` c≈${g.c.toFixed(2)}` : ""} Å`;
     S.fit = null; S.modelFit = null; S.scan = null; S.models = null;
     renderPeaks(); renderSimPeaks(); renderFit(); renderFindings(); setView("overview"); draw();
-    if (typeof drawSim === "function" && SIM.layer) { SIM.fit = SIM.scan = SIM.dscan = null; drawSim(); renderSimTables(); renderConclusion(); }
+    if (typeof drawSim === "function" && SIM.layer) { SIM.fit = SIM.scan = SIM.dscan = null; drawSim(); renderSimTables(); renderConclusion(); autoConclude(); }
   }
 
   /* ───────── rendering: tables ───────── */
@@ -1600,6 +1606,7 @@
     $("simocc").value = "1"; $("simoccv").textContent = "1.00";
     SIM.fit = SIM.scan = SIM.dscan = null;
     renderSimInfo(); buildModel(); drawSim(); renderSimTables(); renderConclusion();
+    if (S.exp) autoConclude();
   }
   // take the first layer of a CIF as the stacking unit
   function loadLayerFromCIF(cif) {
@@ -1951,7 +1958,7 @@
     const box = $("conclusion"); if (!box) return;
     const out = [], P = S.fit, M = SIM.fit, Ly = SIM.layer;
     const push = (cls, html) => out.push(`<div class="${cls}">${html}</div>`);
-    if (!P && !M) { box.innerHTML = `<div class="infobox">위의 <b>구조 시뮬레이션</b>과 아래의 <b>Pawley 정제</b>를 실행하면 두 결과를 합쳐 결론을 만듭니다.</div>`; $("conccount").textContent = "—"; return; }
+    if (!P && !M) { box.innerHTML = `<div class="infobox">맨 위 <b>실험 데이터</b>에 패턴을 올리면 Pawley 정제와 구조 모델 fit을 자동으로 실행해 여기에 결론을 만듭니다.</div>`; $("conccount").textContent = "—"; return; }
     // 1. lattice
     if (P) {
       const span = S.scan && S.scan.length ? [Math.min(...S.scan.map((q) => q.a)), Math.max(...S.scan.map((q) => q.a))] : null;
@@ -2045,6 +2052,30 @@
   $("simdlposcar").addEventListener("click", async () => { const t = modelPOSCAR(); if (t) try { await saveFile("POSCAR.vasp", t, "text/plain"); $("simstatus").textContent = "POSCAR 저장 · 최적화: xtb POSCAR.vasp --gfnff --opt"; } catch (e) {} });
   document.querySelectorAll("#simviewchips .chip").forEach((c) => c.addEventListener("click", () => { setSimView(c.dataset.view); drawSim(); }));
   window.addEventListener("resize", () => drawSim());
+  /* ───────── combined run: both halves → conclusion ───────── */
+  let autoTimer = null, running = false;
+  async function runAll(full) {
+    if (!S.exp || running) return;
+    running = true; $("concrun").disabled = true;
+    const say = (t) => { $("concstatus").textContent = t; };
+    try {
+      say("Pawley 정제 중…"); await onRun();
+      if (full) { say("zero 스캔 중…"); await onScan(); }
+      if (SIM.layer) {
+        say("모델 fit 중…"); await onSimFit();
+        if (full) {
+          say("적층 스캔 중… (1–2분)"); await onSimScan(); setSimView("sscan"); drawSim();
+          if (currentOpt().subst.filter(Boolean).length) { say("무질서 스캔 중…"); await onDisorderScan(); }
+        }
+      }
+      say(full ? "전체 분석 완료." : "Pawley와 현재 구조 모델 fit으로 만든 결론입니다. 적층·무질서·zero 스캔까지 넣으려면 전체 분석을 누르세요.");
+    } catch (e) { console.error(e); say("분석 실패: " + e.message); }
+    finally { running = false; $("concrun").disabled = false; renderConclusion(); }
+  }
+  // quick conclusion whenever the data or the structure model changes
+  function autoConclude() { clearTimeout(autoTimer); autoTimer = setTimeout(() => runAll(false), 300); }
+  $("concrun").addEventListener("click", () => runAll(true));
+
   loadLib(Object.keys(LIB)[0]);
 
   demo();
