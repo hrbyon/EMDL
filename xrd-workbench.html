@@ -135,7 +135,27 @@
   .sectitle { flex-wrap: wrap; row-gap: 4px; }
   .sectitle small { font-size: 12.5px; font-weight: 400; color: var(--muted); }
   @media (max-width: 640px) { .sectitle small { flex-basis: 100%; } }
-  #simplot { height: 400px; }
+  #simplot { height: 460px; }
+  /* shared data strip: one row on wide screens */
+  .datastrip { margin-top: 26px; }
+  @media (min-width: 981px) {
+    .datastrip .pbody { display: grid; grid-template-columns: minmax(220px, 1.2fr) 1fr 1fr minmax(240px, 1.1fr) auto; gap: 14px; align-items: end; }
+    .datastrip .pbody > * { margin: 0; }
+    .datastrip .drop { height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    .datastrip .btnrow { margin: 0; }
+    .datastrip .status { grid-column: 1 / -1; }
+    .datastrip .status:empty { display: none; }
+    /* controls stay beside the plots while the longer column scrolls */
+    .rail { position: sticky; top: 14px; }
+  }
+  /* A2 structure notes: label column sized for the narrow rail */
+  #simdesc { gap: 0; }
+  #simdesc .grow { grid-template-columns: 5.5em 1fr; gap: 4px 10px; padding: 8px 0; }
+  #simdesc .grow:last-child { border-bottom: 0; }
+  #simdesc .grow .v { font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+  /* fit summary: the model label is text, not a number */
+  #simkv > .wide { grid-column: span 2; }
+  #simkv .v.lbl { font-family: inherit; font-size: 13.5px; line-height: 1.35; }
   details.panel summary { padding: 2px 0; }
   details.panel table { margin-top: 10px; }
   /* usage guide (moved from the index page) */
@@ -166,11 +186,8 @@
   </header>
 
 
-  <h2 class="sectitle"><span>A</span> 구조 시뮬레이션 <small>구조 모델 → 적층·무질서 → 실험과 원자 고정 fit</small></h2>
-  <div class="shell">
-    <div class="rail">
-      <section class="panel">
-        <div class="phead"><span class="t">A1 · 실험 데이터</span><span class="n" id="datainfo">—</span></div>
+      <section class="panel datastrip">
+        <div class="phead"><span class="t">실험 데이터 · A·B 공용</span><span class="n" id="datainfo">—</span></div>
         <div class="pbody">
           <div class="drop" id="drop" tabindex="0" role="button" aria-label="XRD 파일 열기">
             <b>CSV · TXT · XY</b> 파일을 끌어다 놓거나 클릭<br><span class="hint">(x,y)(x,y)… 쌍 배열, x + 다중 y 자동 인식</span>
@@ -193,8 +210,11 @@
         </div>
       </section>
 
+  <h2 class="sectitle"><span>A</span> 구조 시뮬레이션 <small>구조 모델 → 적층·무질서 → 실험과 원자 고정 fit</small></h2>
+  <div class="shell">
+    <div class="rail">
       <section class="panel">
-        <div class="phead"><span class="t">A2 · 구조 모델</span><span class="n" id="siminfo">—</span></div>
+        <div class="phead"><span class="t">A1 · 구조 모델</span><span class="n" id="siminfo">—</span></div>
         <div class="pbody">
           <label class="field"><span class="lab">라이브러리 (GFN-FF 최적화) 또는 CIF</span><select id="simlib"></select></label>
           <input type="file" id="simciffile" accept=".cif,.txt" hidden>
@@ -203,7 +223,7 @@
       </section>
 
       <section class="panel">
-        <div class="phead"><span class="t">A3 · 적층 · 무질서</span></div>
+        <div class="phead"><span class="t">A2 · 적층 · 무질서</span></div>
         <div class="pbody">
           <div class="row2">
             <label class="field"><span class="lab">적층</span>
@@ -221,7 +241,7 @@
       </section>
 
       <section class="panel">
-        <div class="phead"><span class="t">A4 · 실험과 맞추기</span></div>
+        <div class="phead"><span class="t">A3 · 실험과 맞추기</span></div>
         <div class="pbody">
           <div class="btnrow">
             <button class="primary" id="simfit">모델 fit</button>
@@ -430,9 +450,9 @@
   <section class="guide" aria-label="사용 안내">
     <h2>쓰는 순서</h2>
     <ol class="gsteps">
-      <li><span><b>A1</b>에 실험 패턴 파일을 올립니다. <code>(2θ, I)(2θ, I)…</code> 쌍 배열이면 시뮬레이션 열도 자동으로 인식합니다.</span></li>
+      <li><span>맨 위 <b>실험 데이터</b>에 패턴 파일을 올립니다. <code>(2θ, I)(2θ, I)…</code> 쌍 배열이면 시뮬레이션 열도 자동으로 인식합니다.</span></li>
       <li><span><b>B</b>에서 <b>Pawley 실행</b>과 <b>zero 스캔</b>으로 격자상수·결정 크기·반사 강도와 zero shift를 구합니다. 이 zero 값은 A의 모델 fit에 그대로 쓰입니다.</span></li>
-      <li><span><b>A2</b>에서 구조를 고르고(라이브러리 또는 CIF의 첫 층), <b>적층 스캔</b>으로 AA·inclined·serrated·AB 중 실험에 맞는 적층을, 치환기가 있으면 <b>무질서 스캔</b>으로 정렬 비율을 찾습니다.</span></li>
+      <li><span><b>A1</b>에서 구조를 고르고(라이브러리 또는 CIF의 첫 층), <b>적층 스캔</b>으로 AA·inclined·serrated·AB 중 실험에 맞는 적층을, 치환기가 있으면 <b>무질서 스캔</b>으로 정렬 비율을 찾습니다.</span></li>
       <li><span><b>C 종합 결론</b>에서 격자(계산 vs Pawley), 적층(회절 vs GFN-FF 에너지), 층간거리, 강도, 결정 크기를 함께 확인합니다.</span></li>
       <li><span>새 구조는 <b>POSCAR</b>로 내보내 <code>xtb POSCAR.vasp --gfnff --opt</code>(또는 DFT)로 최적화한 뒤 CIF로 다시 불러옵니다.</span></li>
     </ol>
@@ -1923,7 +1943,7 @@
     const cells = [["모델", f.label, SIM.layer.name], ["Rwp (원자 고정)", `${(100 * f.Rwp).toFixed(2)} %`, S.fit ? `Pawley ${(100 * S.fit.Rwp).toFixed(2)} %` : "Pawley 전"],
       ["a (fit)", `${f.a.toFixed(3)} Å`, `모델 ${SIM.layer.a.toFixed(2)} Å의 ×${f.sa.toFixed(3)}`], ["층간거리 (fit)", `${f.dz.toFixed(3)} Å`, `모델 ${(SIM.model.cvec[2] / SIM.model.nlayer).toFixed(2)} Å`],
       ["면내 · 적층 크기", `${f.Lab.toFixed(1)} · ${f.Lc.toFixed(1)} nm`, `${(f.Lc * 10 / f.dz).toFixed(0)}층`], ["zero", `${f.zero >= 0 ? "+" : ""}${f.zero.toFixed(3)}°`, S.fit ? "Pawley 값 고정" : "0 고정"]];
-    kv.innerHTML = cells.map(([k, v, s]) => `<div><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+    kv.innerHTML = cells.map(([k, v, s], i) => `<div${i === 0 ? ' class="wide"' : ""}><div class="k">${k}</div><div class="v${i === 0 ? " lbl" : ""}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
   }
 
   /* ───────── combined conclusion (simulation + Pawley) ───────── */
